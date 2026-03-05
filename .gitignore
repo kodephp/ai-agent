@@ -1,0 +1,16 @@
+/runtime
+/.idea
+/.vscode
+/vendor
+*.log
+.env
+/tests/tmp
+/tests/.phpunit.result.cache
+.trae
+.codebuddy
+.qoder
+composer.lock
+.codeartsdoer
+.arts
+vendor/
+public/uploads
