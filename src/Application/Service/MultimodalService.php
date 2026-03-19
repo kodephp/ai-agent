@@ -14,6 +14,8 @@ use Psr\Log\LoggerInterface;
 
 final readonly class MultimodalService
 {
+    private const MAX_TEXT_LENGTH = 10000;
+
     public function __construct(
         private MultimodalInterface $multimodalAdapter,
         private FileUploaderInterface $fileUploader,
@@ -23,7 +25,7 @@ final readonly class MultimodalService
     #[\NoDiscard]
     public function generate(string $prompt, array $options = []): mixed
     {
-        $this->validatePrompt($prompt);
+        $this->validateInput($prompt, '提示词');
         $this->log('info', '开始智能生成', ['prompt' => substr($prompt, 0, 100)]);
 
         try {
@@ -40,7 +42,7 @@ final readonly class MultimodalService
     #[\NoDiscard]
     public function generateImage(string $prompt, array $options = []): ImageResponse
     {
-        $this->validatePrompt($prompt);
+        $this->validateInput($prompt, '提示词');
         $this->ensureCapability(MultimodalCapability::TEXT_TO_IMAGE);
         $this->log('info', '开始生成图像', ['prompt' => substr($prompt, 0, 100)]);
 
@@ -58,7 +60,7 @@ final readonly class MultimodalService
     #[\NoDiscard]
     public function editImage(string $imagePath, string $prompt, array $options = []): ImageResponse
     {
-        $this->validatePrompt($prompt);
+        $this->validateInput($prompt, '提示词');
         $this->ensureCapability(MultimodalCapability::IMAGE_EDIT);
         $this->log('info', '开始编辑图像', ['file' => $imagePath]);
 
@@ -97,7 +99,7 @@ final readonly class MultimodalService
     #[\NoDiscard]
     public function generateVideo(string $prompt, array $options = []): VideoResponse
     {
-        $this->validatePrompt($prompt);
+        $this->validateInput($prompt, '提示词');
         $this->ensureCapability(MultimodalCapability::TEXT_TO_VIDEO);
         $this->log('info', '开始生成视频', ['prompt' => substr($prompt, 0, 100)]);
 
@@ -135,7 +137,7 @@ final readonly class MultimodalService
     public function generateAvatar(string $text, array $options = []): AvatarResponse
     {
         $this->ensureCapability(MultimodalCapability::AVATAR_GENERATION);
-        $this->validateText($text);
+        $this->validateInput($text, '口语文本');
         $this->log('info', '开始生成数字人视频', ['text_length' => strlen($text)]);
 
         try {
@@ -157,7 +159,7 @@ final readonly class MultimodalService
         array $options = []
     ): AvatarResponse {
         $this->ensureCapability(MultimodalCapability::AVATAR_CUSTOM_VIDEO);
-        $this->validateText($text);
+        $this->validateInput($text, '口语文本');
         $this->log('info', '开始上传自定义视频', ['file' => $videoFileName]);
 
         $mediaFile = $this->fileUploader->upload($videoPath, $videoFileName, MediaFile::TYPE_VIDEO);
@@ -205,7 +207,7 @@ final readonly class MultimodalService
     public function generateAvatarFromRequestVideo(string $text, array $fileData, array $options = []): AvatarResponse
     {
         $this->ensureCapability(MultimodalCapability::AVATAR_CUSTOM_VIDEO);
-        $this->validateText($text);
+        $this->validateInput($text, '口语文本');
         $this->log('info', '开始处理请求中的视频上传');
 
         $mediaFile = $this->fileUploader->uploadFromRequest($fileData, MediaFile::TYPE_VIDEO);
@@ -248,7 +250,7 @@ final readonly class MultimodalService
     public function generateAsync(string $text, array $options = []): string
     {
         $this->ensureCapability(MultimodalCapability::ASYNC_GENERATION);
-        $this->validateText($text);
+        $this->validateInput($text, '口语文本');
         $this->log('info', '开始异步生成数字人视频');
 
         return $this->multimodalAdapter->generateAvatarVideoAsync($text, $options);
@@ -303,25 +305,14 @@ final readonly class MultimodalService
         return $this->fileUploader->getUrl($file);
     }
 
-    private function validatePrompt(string $prompt): void
+    private function validateInput(string $input, string $fieldName = '输入'): void
     {
-        if (empty(trim($prompt))) {
-            throw new InvalidInputException('提示词不能为空');
+        if (empty(trim($input))) {
+            throw new InvalidInputException("{$fieldName}不能为空");
         }
 
-        if (strlen($prompt) > 10000) {
-            throw new InvalidInputException('提示词长度不能超过10000字符');
-        }
-    }
-
-    private function validateText(string $text): void
-    {
-        if (empty(trim($text))) {
-            throw new InvalidInputException('口语文本不能为空');
-        }
-
-        if (strlen($text) > 10000) {
-            throw new InvalidInputException('口语文本长度不能超过10000字符');
+        if (strlen($input) > self::MAX_TEXT_LENGTH) {
+            throw new InvalidInputException("{$fieldName}长度不能超过" . self::MAX_TEXT_LENGTH . "字符");
         }
     }
 

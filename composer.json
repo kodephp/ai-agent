@@ -3,7 +3,7 @@
     "description": "企业级 PHP AI Agent 层，兼容 Symfony AI 生态，支持协程、管道和 SSE 流式响应。新增文本生成图像、文本生成视频、数字人等多模态 API 支持。",
     "type": "library",
     "license": "Apache-2.0",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "autoload": {
         "psr-4": {
             "Kode\\AiAgent\\": "src/"

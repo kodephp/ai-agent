@@ -6,11 +6,10 @@
 .env
 /tests/tmp
 /tests/.phpunit.result.cache
-.trae
+.trae/
 .codebuddy
 .qoder
 composer.lock
 .codeartsdoer
 .arts
-vendor/
 public/uploads

@@ -7,6 +7,7 @@ namespace Kode\AiAgent\Tests;
 use Kode\AiAgent\Agent\Agent;
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, ResponseInterface};
 use Kode\AiAgent\Domain\Model\Response;
+use Kode\AiAgent\Exception\InvalidInputException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -110,6 +111,15 @@ final class AgentTest extends TestCase
         
         $agent->withAdapter($adapter2);
         $this->assertSame($adapter2, $agent->adapter());
+    }
+
+    public function testChatThrowsWhenMessageEmpty(): void
+    {
+        $adapter = $this->createMockAdapter();
+        $agent = new Agent($adapter);
+
+        $this->expectException(InvalidInputException::class);
+        $agent->chat('   ');
     }
 
     private function createMockAdapter(): AdapterInterface&MockObject

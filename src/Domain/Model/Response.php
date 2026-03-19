@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kode\AiAgent\Domain\Model;
 
 use Kode\AiAgent\Domain\Contract\ResponseInterface;
+use Kode\Message\Message;
 
 /**
  * AI 响应值对象
@@ -130,25 +131,24 @@ readonly class Response implements ResponseInterface
      */
     public function toArray(): array
     {
-        $result = [
-            'code' => $this->code,
-            'msg' => $this->msg,
-            'duration' => $this->duration,
-            'data' => [
+        $message = (new Message())
+            ->code($this->code)
+            ->msg($this->msg)
+            ->data([
                 'content' => $this->content,
                 'choices' => $this->choices,
                 'usage' => $this->usage,
-            ],
-        ];
+            ])
+            ->ext('duration', $this->duration);
 
         if ($this->requestId !== '') {
-            $result['request_id'] = $this->requestId;
+            $message->ext('request_id', $this->requestId);
         }
         if ($this->model !== '') {
-            $result['model'] = $this->model;
+            $message->ext('model', $this->model);
         }
 
-        return $result;
+        return $message->result();
     }
 
     /**

@@ -112,6 +112,86 @@ foreach (Ai::stream('讲一个故事') as $chunk) {
 }
 ```
 
+### 4. 多模型分工代理（总工/分析员/执行员）
+
+```php
+use Kode\AiAgent\Agent\Agent;
+use Kode\AiAgent\Agent\RoleAgentTeam;
+use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+
+$chief = new Agent(AdapterFactory::openai('sk-chief-xxx', ['model' => 'gpt-4o']));
+$analyst = new Agent(AdapterFactory::deepseek('sk-analyst-xxx', ['model' => 'deepseek-chat']));
+$executor = new Agent(AdapterFactory::anthropic('sk-exec-xxx', ['model' => 'claude-3-5-sonnet']));
+
+$team = (new RoleAgentTeam())
+    ->assign('总工', $chief)
+    ->assign('分析员', $analyst)
+    ->assign('执行员', $executor);
+
+$result = $team->run('建设 MCP 工具链路', [
+    ['role' => '总工', 'task' => '根据目标制定技术路线：{{goal}}'],
+    ['role' => '分析员', 'task' => '拆解任务并识别风险'],
+    ['role' => '执行员', 'task' => '按拆解结果输出实现步骤'],
+]);
+
+foreach ($result['outputs'] as $output) {
+    echo "[{$output['role']}] {$output['content']}\n";
+}
+
+// 自动路由：根据任务内容命中角色
+$team->routes([
+    '架构|方案|设计' => '总工',
+    '分析|风险|拆解' => '分析员',
+    '开发|实现|修复' => '执行员',
+]);
+
+$auto = $team->auto('请先分析需求并识别风险');
+echo $auto->content();
+```
+
+### 4.1 通过 Ai 门面快速构建团队
+
+```php
+use Kode\AiAgent\Support\Facade\Ai;
+use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+
+Ai::register('chief', AdapterFactory::openai('sk-chief-xxx'));
+Ai::register('analyst', AdapterFactory::deepseek('sk-analyst-xxx'));
+Ai::register('executor', AdapterFactory::anthropic('sk-exec-xxx'));
+
+$team = Ai::team([
+    '总工' => 'chief',
+    '分析员' => 'analyst',
+    '执行员' => 'executor',
+]);
+```
+
+### 5. MCP Client/Server 协作
+
+```php
+use Kode\AiAgent\MCP\MCPClient;
+use Kode\AiAgent\MCP\MCPServer;
+
+$server = new MCPServer(['name' => 'demo-mcp', 'version' => '1.0.0']);
+$server->registerTool('sum', '求和', fn(array $args) => ($args['a'] ?? 0) + ($args['b'] ?? 0), [
+    'a' => 'number',
+    'b' => 'number',
+]);
+
+$client = new MCPClient(transport: fn(array $request) => $server->handle($request));
+$client->connect('mcp://local');
+
+$tools = $client->listTools();
+$value = $client->callTool('sum', ['a' => 1, 'b' => 2]);
+```
+
+## 输入校验与安全策略
+
+- 主链路默认启用输入校验：提示词空值、长度、控制字符、常见参数范围会在调用前校验
+- `chat/stream` 会先校验消息与 options，再进入适配器请求阶段
+- 基础 URL 采用严格 HTTPS 策略：非 `https://` 地址会直接抛出配置异常
+- 响应输出统一使用 `kode/tools` 的 Message 结构，便于业务层一致处理
+
 ## 支持的平台
 
 | 平台 | 别名 | 适配器 | 认证方式 | 默认模型 |

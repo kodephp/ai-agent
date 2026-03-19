@@ -6,6 +6,7 @@ namespace Kode\AiAgent\Application\Service;
 
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, PipelineInterface, PromptInterface, ResponseInterface};
 use Kode\AiAgent\Domain\Model\Prompt;
+use Kode\AiAgent\Support\Validator\InputValidator;
 
 /**
  * AI Agent 服务
@@ -32,10 +33,13 @@ use Kode\AiAgent\Domain\Model\Prompt;
 final class AgentService implements PipelineInterface
 {
     private array $stages = [];
+    private InputValidator $validator;
 
     public function __construct(
         private AdapterInterface $adapter
-    ) {}
+    ) {
+        $this->validator = new InputValidator();
+    }
 
     /**
      * 发送聊天消息
@@ -47,7 +51,9 @@ final class AgentService implements PipelineInterface
     #[\NoDiscard]
     public function chat(string $message, array $options = []): ResponseInterface
     {
-        return $this->generate(new Prompt($message), $options);
+        $validatedMessage = $this->validator->validatePrompt($message);
+        $validatedOptions = $this->validator->validateOptions($options);
+        return $this->generate(new Prompt($validatedMessage), $validatedOptions);
     }
 
     /**
@@ -60,7 +66,9 @@ final class AgentService implements PipelineInterface
     #[\NoDiscard]
     public function stream(string $message, array $options = []): \Generator
     {
-        return $this->adapter->stream(new Prompt($message), $options);
+        $validatedMessage = $this->validator->validatePrompt($message);
+        $validatedOptions = $this->validator->validateOptions($options);
+        return $this->adapter->stream(new Prompt($validatedMessage), $validatedOptions);
     }
 
     /**
@@ -73,10 +81,8 @@ final class AgentService implements PipelineInterface
     #[\NoDiscard]
     public function generate(PromptInterface $prompt, array $options = []): ResponseInterface
     {
-        $handler = function (PromptInterface $prompt) use ($options): ResponseInterface {
-            return $this->adapter->send($prompt, $options);
-        };
-
+        $validatedPrompt = new Prompt($this->validator->validatePrompt($prompt->text()));
+        $validatedOptions = $this->validator->validateOptions($options);
         $pipeline = array_reduce(
             array_reverse($this->stages),
             function (callable $next, callable $stage): callable {
@@ -84,10 +90,10 @@ final class AgentService implements PipelineInterface
                     return $stage($prompt, $next);
                 };
             },
-            $handler
+            fn (PromptInterface $prompt): ResponseInterface => $this->adapter->send($prompt, $validatedOptions)
         );
 
-        return $pipeline($prompt);
+        return $pipeline($validatedPrompt);
     }
 
     /**

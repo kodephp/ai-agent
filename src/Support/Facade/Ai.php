@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Support\Facade;
 
+use Kode\AiAgent\Agent\Agent;
+use Kode\AiAgent\Agent\RoleAgentTeam;
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, ResponseInterface};
 use Kode\AiAgent\Domain\Model\Prompt;
 use Kode\AiAgent\Exception\ConfigurationException;
+use Kode\Context\Context as KodeContext;
 use Kode\Facade\Facade;
 
 /**
@@ -35,11 +38,15 @@ use Kode\Facade\Facade;
  * @method static AdapterInterface using(string $platform)
  * @method static void setDefaultAdapter(AdapterInterface $adapter)
  * @method static void register(string $name, AdapterInterface $adapter)
+ * @method static RoleAgentTeam team(array $roleAdapters = [])
  * @method static AdapterInterface adapter()
  * @method static void reset()
  */
 final class Ai extends Facade
 {
+    private const CONTEXT_DEFAULT_ADAPTER_KEY = 'ai_agent.facade.default_adapter';
+    private const CONTEXT_ADAPTERS_KEY = 'ai_agent.facade.adapters';
+
     private static ?AdapterInterface $defaultAdapter = null;
     private static array $adapters = [];
 
@@ -91,6 +98,7 @@ final class Ai extends Facade
     public function setDefaultAdapter(AdapterInterface $adapter): void
     {
         self::$defaultAdapter = $adapter;
+        KodeContext::set(self::CONTEXT_DEFAULT_ADAPTER_KEY, $adapter);
     }
 
     /**
@@ -99,6 +107,9 @@ final class Ai extends Facade
     public function register(string $name, AdapterInterface $adapter): void
     {
         self::$adapters[$name] = $adapter;
+        $adapters = KodeContext::get(self::CONTEXT_ADAPTERS_KEY, []);
+        $adapters[$name] = $adapter;
+        KodeContext::set(self::CONTEXT_ADAPTERS_KEY, $adapters);
     }
 
     /**
@@ -106,7 +117,34 @@ final class Ai extends Facade
      */
     public function adapter(): AdapterInterface
     {
-        return self::$defaultAdapter ?? throw ConfigurationException::missing('default_adapter');
+        $adapter = KodeContext::get(self::CONTEXT_DEFAULT_ADAPTER_KEY);
+        return $adapter ?? self::$defaultAdapter ?? throw ConfigurationException::missing('default_adapter');
+    }
+
+    public function team(array $roleAdapters = []): RoleAgentTeam
+    {
+        $team = new RoleAgentTeam();
+
+        if ($roleAdapters === []) {
+            $team->assign('执行员', new Agent($this->adapter()));
+            return $team;
+        }
+
+        foreach ($roleAdapters as $role => $adapter) {
+            if ($adapter instanceof AdapterInterface) {
+                $team->assign((string) $role, new Agent($adapter));
+                continue;
+            }
+
+            if (is_string($adapter)) {
+                $team->assign((string) $role, new Agent(self::resolveAdapter($adapter)));
+                continue;
+            }
+
+            throw ConfigurationException::invalid('role_adapters', '值必须是适配器实例或已注册平台名');
+        }
+
+        return $team;
     }
 
     /**
@@ -114,7 +152,8 @@ final class Ai extends Facade
      */
     private static function resolveAdapter(string $name): AdapterInterface
     {
-        return self::$adapters[$name] ?? throw ConfigurationException::unsupportedPlatform($name);
+        $adapters = KodeContext::get(self::CONTEXT_ADAPTERS_KEY, []);
+        return $adapters[$name] ?? self::$adapters[$name] ?? throw ConfigurationException::unsupportedPlatform($name);
     }
 
     /**
@@ -124,5 +163,7 @@ final class Ai extends Facade
     {
         self::$defaultAdapter = null;
         self::$adapters = [];
+        KodeContext::delete(self::CONTEXT_DEFAULT_ADAPTER_KEY);
+        KodeContext::delete(self::CONTEXT_ADAPTERS_KEY);
     }
 }

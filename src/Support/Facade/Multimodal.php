@@ -10,6 +10,7 @@ use Kode\AiAgent\Domain\Model\{AvatarResponse, ImageResponse, Progress, VideoRes
 use Kode\AiAgent\Domain\ValueObject\{MediaFile, MultimodalCapability};
 use Kode\AiAgent\Exception\ConfigurationException;
 use Kode\AiAgent\Infrastructure\Persistence\LocalFileUploader;
+use Kode\Context\Context as KodeContext;
 use Kode\Facade\Facade;
 use Psr\Log\LoggerInterface;
 
@@ -48,6 +49,11 @@ use Psr\Log\LoggerInterface;
  */
 final class Multimodal extends Facade
 {
+    private const CONTEXT_DEFAULT_SERVICE_KEY = 'ai_agent.multimodal.default_service';
+    private const CONTEXT_SERVICES_KEY = 'ai_agent.multimodal.services';
+    private const CONTEXT_FILE_UPLOADER_KEY = 'ai_agent.multimodal.file_uploader';
+    private const CONTEXT_LOGGER_KEY = 'ai_agent.multimodal.logger';
+
     private static ?MultimodalService $defaultService = null;
     private static array $services = [];
     private static ?FileUploaderInterface $defaultFileUploader = null;
@@ -66,11 +72,13 @@ final class Multimodal extends Facade
     public static function setFileUploader(FileUploaderInterface $uploader): void
     {
         self::$defaultFileUploader = $uploader;
+        KodeContext::set(self::CONTEXT_FILE_UPLOADER_KEY, $uploader);
     }
 
     public static function setLogger(LoggerInterface $logger): void
     {
         self::$defaultLogger = $logger;
+        KodeContext::set(self::CONTEXT_LOGGER_KEY, $logger);
     }
 
     #[\NoDiscard]
@@ -206,22 +214,31 @@ final class Multimodal extends Facade
     public static function setDefaultService(MultimodalService $service): void
     {
         self::$defaultService = $service;
+        KodeContext::set(self::CONTEXT_DEFAULT_SERVICE_KEY, $service);
     }
 
     public static function register(string $name, MultimodalService $service): void
     {
         self::$services[$name] = $service;
+        $services = KodeContext::get(self::CONTEXT_SERVICES_KEY, []);
+        $services[$name] = $service;
+        KodeContext::set(self::CONTEXT_SERVICES_KEY, $services);
     }
 
     public function service(): MultimodalService
     {
-        return self::$defaultService ?? throw ConfigurationException::missing('default_multimodal_service');
+        $service = KodeContext::get(self::CONTEXT_DEFAULT_SERVICE_KEY);
+        return $service ?? self::$defaultService ?? throw ConfigurationException::missing('default_multimodal_service');
     }
 
     public static function reset(): void
     {
         self::$defaultService = null;
         self::$services = [];
+        KodeContext::delete(self::CONTEXT_DEFAULT_SERVICE_KEY);
+        KodeContext::delete(self::CONTEXT_SERVICES_KEY);
+        KodeContext::delete(self::CONTEXT_FILE_UPLOADER_KEY);
+        KodeContext::delete(self::CONTEXT_LOGGER_KEY);
     }
 
     public static function createService(
@@ -229,15 +246,18 @@ final class Multimodal extends Facade
         ?FileUploaderInterface $fileUploader = null,
         ?LoggerInterface $logger = null
     ): MultimodalService {
+        $contextUploader = KodeContext::get(self::CONTEXT_FILE_UPLOADER_KEY);
+        $contextLogger = KodeContext::get(self::CONTEXT_LOGGER_KEY);
         return new MultimodalService(
             $adapter,
-            $fileUploader ?? self::$defaultFileUploader ?? new LocalFileUploader(),
-            $logger ?? self::$defaultLogger
+            $fileUploader ?? $contextUploader ?? self::$defaultFileUploader ?? new LocalFileUploader(),
+            $logger ?? $contextLogger ?? self::$defaultLogger
         );
     }
 
     private static function resolveService(string $name): MultimodalService
     {
-        return self::$services[$name] ?? throw ConfigurationException::unsupportedPlatform($name);
+        $services = KodeContext::get(self::CONTEXT_SERVICES_KEY, []);
+        return $services[$name] ?? self::$services[$name] ?? throw ConfigurationException::unsupportedPlatform($name);
     }
 }

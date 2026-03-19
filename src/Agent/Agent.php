@@ -7,6 +7,7 @@ namespace Kode\AiAgent\Agent;
 use Kode\AiAgent\Attribute\Agent as AgentAttribute;
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, PromptInterface, ResponseInterface};
 use Kode\AiAgent\Domain\Model\{Message, Prompt};
+use Kode\AiAgent\Support\Validator\InputValidator;
 use Kode\AiAgent\Tool\ToolRegistry;
 use Kode\Attributes\Reader;
 
@@ -48,6 +49,7 @@ final class Agent
     private array $defaultOptions = [];
     private Reader $reader;
     private int $maxToolCalls = 5;
+    private InputValidator $validator;
 
     public function __construct(
         private AdapterInterface $adapter,
@@ -56,6 +58,7 @@ final class Agent
     ) {
         $this->reader = $reader ?? new Reader();
         $this->toolRegistry = new ToolRegistry($this->reader);
+        $this->validator = new InputValidator();
         $this->systemPrompt = $config['system_prompt'] ?? null;
         $this->maxMessages = $config['max_messages'] ?? 50;
         $this->defaultOptions = $config['options'] ?? [];
@@ -96,18 +99,20 @@ final class Agent
     #[\NoDiscard]
     public function chat(string $message, array $options = []): ResponseInterface
     {
-        $this->addUserMessage($message);
+        $validatedMessage = $this->validator->validatePrompt($message);
+        $validatedOptions = $this->validator->validateOptions($options);
+        $this->addUserMessage($validatedMessage);
 
         $response = $this->adapter->send(
             $this->buildPrompt(),
-            $this->mergeOptions($options)
+            $this->mergeOptions($validatedOptions)
         );
 
         // 检查是否需要工具调用
         $toolCalls = $this->extractToolCalls($response);
         
         if (!empty($toolCalls)) {
-            $response = $this->handleToolCalls($response, $options);
+            $response = $this->handleToolCalls($response, $validatedOptions);
         }
 
         $this->addAssistantMessage($response->content());
@@ -122,11 +127,13 @@ final class Agent
     #[\NoDiscard]
     public function stream(string $message, array $options = []): \Generator
     {
-        $this->addUserMessage($message);
+        $validatedMessage = $this->validator->validatePrompt($message);
+        $validatedOptions = $this->validator->validateOptions($options);
+        $this->addUserMessage($validatedMessage);
 
         $fullContent = '';
 
-        foreach ($this->adapter->stream($this->buildPrompt(), $this->mergeOptions($options)) as $chunk) {
+        foreach ($this->adapter->stream($this->buildPrompt(), $this->mergeOptions($validatedOptions)) as $chunk) {
             $fullContent .= $chunk;
             yield $chunk;
         }
@@ -209,7 +216,8 @@ final class Agent
      */
     public function executeTool(string $name, array $arguments): mixed
     {
-        return $this->toolRegistry->execute($name, $arguments);
+        $validatedArguments = $this->validator->validateToolCall($name, $arguments);
+        return $this->toolRegistry->execute($name, $validatedArguments);
     }
 
     /**

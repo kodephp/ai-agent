@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Kode\AiAgent\Tests;
 
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+use Kode\AiAgent\Infrastructure\Adapter\OpenAiAdapter;
 use Kode\AiAgent\Exception\ConfigurationException;
+use Kode\HttpClient\HttpClient;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -65,5 +67,14 @@ final class AdapterFactoryTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         AdapterFactory::register('invalid', \stdClass::class);
+    }
+
+    public function testCreateOpenAiAdapterWithHttpBaseUrlThrows(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        new OpenAiAdapter($this->createMock(HttpClient::class), [
+            'api_key' => 'sk-1234567890abcdef',
+            'base_url' => 'http://api.openai.com/v1/chat/completions',
+        ]);
     }
 }

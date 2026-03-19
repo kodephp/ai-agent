@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Infrastructure\Adapter;
 
+use Kode\AiAgent\Exception\ConfigurationException;
+
 /**
  * 流式响应处理 Trait
  * 
@@ -65,10 +67,7 @@ trait StreamHelper
     protected function ensureHttps(string $url): string
     {
         if (!str_starts_with($url, 'https://')) {
-            if (str_starts_with($url, 'http://')) {
-                return 'https://' . substr($url, 7);
-            }
-            return 'https://' . $url;
+            throw ConfigurationException::invalid('base_url', '必须使用 HTTPS 协议');
         }
         return $url;
     }
