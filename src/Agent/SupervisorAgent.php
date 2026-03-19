@@ -14,6 +14,7 @@ use Psr\Log\LoggerInterface;
  *
  * 类似于 GSD-2 的 Supervisor 模式，一个主管 Agent 协调多个专门 Agent 的工作。
  * 支持自动任务分解、路由、执行和结果聚合。
+ * 集成 ExecutionContext 实现协程安全的任务执行管理。
  *
  * @package Kode\AiAgent\Agent
  *
@@ -37,7 +38,7 @@ final class SupervisorAgent
     private array $workers = [];
     private array $roleDescriptions = [];
     private CostTracker $costTracker;
-    private array $executionHistory = [];
+    private bool $useContextStorage = false;
 
     public function __construct(
         private Agent $supervisor,
@@ -83,9 +84,30 @@ final class SupervisorAgent
         return $this->costTracker;
     }
 
+    public function useContextStorage(bool $use = true): self
+    {
+        $this->useContextStorage = $use;
+        return $this;
+    }
+
+    /**
+     * 获取执行历史（支持协程安全存储）
+     */
     public function executionHistory(): array
     {
-        return $this->executionHistory;
+        if ($this->useContextStorage) {
+            return ExecutionContext::getHistoryFromContext();
+        }
+
+        return ExecutionContext::getHistoryFromContext();
+    }
+
+    /**
+     * 清除执行历史
+     */
+    public function clearHistory(): void
+    {
+        ExecutionContext::clearHistory();
     }
 
     /**
@@ -93,7 +115,9 @@ final class SupervisorAgent
      */
     public function supervise(string $goal, array $workflow, array $options = []): ResponseInterface
     {
-        $context = new ExecutionContext(
+        $options['use_context_storage'] = $this->useContextStorage;
+
+        $context = ExecutionContext::create(
             id: $this->generateId(),
             task: $goal,
             role: 'supervisor',
@@ -104,6 +128,7 @@ final class SupervisorAgent
         $this->log('info', '开始监督任务', [
             'goal' => substr($goal, 0, 100),
             'steps' => count($workflow),
+            'context_id' => $context->id(),
         ]);
 
         try {
@@ -113,24 +138,20 @@ final class SupervisorAgent
             $results = $this->executePlan($plan, $options);
             $context->complete($results);
 
-            $this->executionHistory[] = $context->toArray();
-            $this->trimHistory();
-
-            $finalResponse = $this->synthesize($goal, $results);
             $this->log('info', '监督任务完成', [
                 'duration' => $context->duration(),
                 'steps_completed' => count($results),
+                'context_id' => $context->id(),
             ]);
 
+            $finalResponse = $this->synthesize($goal, $results);
             return $finalResponse;
         } catch (\Throwable $e) {
             $context->fail($e->getMessage());
-            $this->executionHistory[] = $context->toArray();
-            $this->trimHistory();
-
             $this->log('error', '监督任务失败', [
                 'error' => $e->getMessage(),
                 'attempts' => $context->attempts(),
+                'context_id' => $context->id(),
             ]);
 
             throw PlatformException::connectionFailed($goal, $e);
@@ -172,7 +193,9 @@ final class SupervisorAgent
      */
     public function auto(string $task, array $options = []): ResponseInterface
     {
-        $context = new ExecutionContext(
+        $options['use_context_storage'] = $this->useContextStorage;
+
+        $context = ExecutionContext::create(
             id: $this->generateId(),
             task: $task,
             role: 'supervisor',
@@ -180,6 +203,10 @@ final class SupervisorAgent
         );
 
         $context->start();
+        $this->log('info', '开始自动任务分解', [
+            'task' => substr($task, 0, 100),
+            'context_id' => $context->id(),
+        ]);
 
         try {
             $decomposed = $this->decompose($task, $options);
@@ -201,6 +228,20 @@ final class SupervisorAgent
             $context->fail($e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * 在新的执行上下文中运行（协程安全）
+     */
+    public function runWithContext(string $goal, array $workflow, array $options = []): ResponseInterface
+    {
+        return ExecutionContext::run(function ($context) use ($goal, $workflow, $options) {
+            $this->log('info', '在协程安全的执行上下文中运行', [
+                'context_id' => $context->id(),
+            ]);
+
+            return $this->supervise($goal, $workflow, $options);
+        });
     }
 
     /**
@@ -395,19 +436,6 @@ PROMPT;
             date('Ymd-His'),
             bin2hex(random_bytes(4))
         );
-    }
-
-    /**
-     * 裁剪历史记录
-     */
-    private function trimHistory(): void
-    {
-        if (count($this->executionHistory) > $this->maxHistorySize) {
-            $this->executionHistory = array_slice(
-                $this->executionHistory,
-                -$this->maxHistorySize
-            );
-        }
     }
 
     /**
