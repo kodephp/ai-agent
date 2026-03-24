@@ -1,9 +1,9 @@
 {
     "name": "kode/ai-agent",
-    "description": "企业级 PHP AI Agent 层，兼容 Symfony AI 生态，支持协程、管道和 SSE 流式响应。新增文本生成图像、文本生成视频、数字人、短剧生成等完整多模态 API，以及 Monolog 日志、并行处理、进程管理等企业级功能。实现协程安全的执行上下文管理。",
+    "description": "企业级 PHP AI Agent 层，兼容 Symfony AI 生态。新增短剧生成 V2/V3（支持参考图/视频引导、转场效果、开场/结尾视频）、AI字幕生成、配音旁白生成、视频剪辑器、工作流预设模板等完整视频制作功能。支持 Monolog 日志、并行处理、进程管理等企业级特性。",
     "type": "library",
     "license": "Apache-2.0",
-    "version": "1.8.0",
+    "version": "2.0.0",
     "autoload": {
         "psr-4": {
             "Kode\\AiAgent\\": "src/"

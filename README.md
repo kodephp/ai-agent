@@ -1523,25 +1523,24 @@ Kode AI Agent 提供完整的短剧生成工作流，支持一键生成短视频
 
 | 组件 | 类名 | 说明 |
 |------|------|------|
-| 短剧生成器 | `DramaGenerator` | 基础短剧生成 |
-| 短剧智能体 | `DramAgent` | 支持并行处理的高级生成器 |
-| 故事板 | `StoryBoard` | 剧本场景结构 |
-| 场景 | `Scene` | 单个场景定义 |
+| 短剧智能体 | `DramAgentV2` | 完整短剧制作流程 |
+| 增强场景 | `EnhancedScene` | 支持参考图/视频的智能场景 |
+| 故事板 | `StoryBoardV2` | 剧本场景结构 |
 | 场景视频 | `SceneVideo` | 场景视频引用 |
-| 视频合成器 | `VideoComposer`/`VideoComposerV2` | 多视频合并 |
+| 视频合成器 | `VideoComposerV3` | 多视频合并 |
 
 ### 快速开始
 
 ```php
-use Kode\AiAgent\Drama\DramAgent;
+use Kode\AiAgent\Drama\DramAgentV2;
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 use Kode\AiAgent\Log\LogManager;
 
 // 初始化日志
 LogManager::init(['env' => 'dev']);
 
-// 创建 DramAgent
-$agent = new DramAgent(
+// 创建 DramAgentV2
+$agent = new DramAgentV2(
     adapter: AdapterFactory::openai('sk-xxx'),
     config: [
         'scenes' => 5,
@@ -1604,14 +1603,14 @@ $result = $agent->generateWithAvatar(
 );
 ```
 
-### 视频合成增强
+### 视频合成
 
 ```php
-use Kode\AiAgent\Video\VideoComposerV2;
-use Kode\AiAgent\Video\VideoMerger;
+use Kode\AiAgent\Video\VideoComposerV3;
+use Kode\AiAgent\Video\VideoClipper;
 
 // 创建视频合成器
-$composer = new VideoComposerV2(
+$composer = new VideoComposerV3(
     logger: null,
     concurrency: 4,
     config: ['output_dir' => 'var/drama/output']
@@ -1624,22 +1623,295 @@ $output = $composer->compose($sceneVideos, [
     'music_volume' => 0.3,
 ]);
 
-// 合并多个视频
-$output = $composer->concatenate([
-    '/path/to/video1.mp4',
-    '/path/to/video2.mp4',
-    '/path/to/video3.mp4',
+// 使用剪辑器
+$clipper = new VideoClipper();
+$clipper->split('/path/to/video.mp4', 60);
+$clipper->cut('/path/to/video.mp4', 10, 30);
+```
+
+## 短剧生成系统 V2 (v1.9.0+)
+
+增强版短剧生成系统，支持参考图/视频引导、转场效果、开场/结尾视频等高级功能。
+
+### 核心组件
+
+| 组件 | 类名 | 说明 |
+|------|------|------|
+| 增强场景 | `EnhancedScene` | 支持参考图/视频的智能场景 |
+| 转场管理 | `TransitionManager` | 多种转场效果（淡入淡出、滑动、缩放等） |
+| 帧视频 | `FrameVideo`/`FrameVideoManager` | 开场/结尾视频管理 |
+| 短剧智能体 V2 | `DramAgentV2` | 完整短剧制作流程 |
+| 视频合成器 V3 | `VideoComposerV3` | 支持转场、背景音乐、字幕 |
+
+### 转场效果类型
+
+| 类型 | 说明 | FFmpeg 滤镜 |
+|------|------|-------------|
+| `fade` | 淡入淡出 | fade |
+| `dissolve` | 溶解切换 | fade |
+| `slide_left` | 左滑 | slide |
+| `slide_right` | 右滑 | slide |
+| `slide_up` | 上滑 | slide |
+| `slide_down` | 下滑 | slide |
+| `zoom_in` | 放大 | zoompan |
+| `zoom_out` | 缩小 | zoompan |
+| `blur` | 模糊 | boxblur |
+| `cross_wipe` | 交叉擦除 | wiperight |
+
+### 增强版短剧生成示例
+
+```php
+use Kode\AiAgent\Drama\{DramAgentV2, EnhancedScene, SceneType, TransitionType, FrameVideo};
+use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+use Kode\AiAgent\Log\LogManager;
+
+LogManager::init(['env' => 'dev']);
+
+$agent = new DramAgentV2(
+    adapter: AdapterFactory::openai('sk-xxx'),
+    config: [
+        'scenes' => 5,
+        'duration_per_scene' => 10,
+        'style' => 'cinematic',
+        'transition_type' => 'fade',
+        'transition_duration' => 1,
+        'background_music' => '/path/to/bgm.mp3',
+        'music_volume' => 0.3,
+    ],
+);
+
+// 一键生成完整短剧（带开场、结尾、转场）
+$result = $agent->generate('在一个阳光明媚的早晨...', [
+    'scenes' => 5,
+    'reference_image' => 'https://example.com/style-ref.jpg',
+    'opening' => [
+        'title' => '精彩故事即将开始',
+        'duration' => 5,
+    ],
+    'closing' => [
+        'text' => '感谢观看',
+        'duration' => 10,
+    ],
+    'background_music' => '/path/to/music.mp3',
 ]);
 
-// 视频分段
-$chunks = $composer->split('/path/to/long-video.mp4', 60);
+echo "输出视频: {$result->video}\n";
+echo "场景数量: {$result->scenesCount()}\n";
+echo "转场数量: {$result->transitionsCount()}\n";
+```
 
-// 添加水印
-$watermarked = $composer->addWatermark(
-    '/path/to/video.mp4',
-    '/path/to/watermark.png',
-    ['position' => '右下', 'opacity' => 0.3]
+### 使用参考图/视频引导
+
+```php
+// 设置参考图（风格引导）
+$result = $agent->generate($script, [
+    'reference_image' => 'https://example.com/style.jpg',
+    'scenes' => 5,
+]);
+
+// 单个场景也可以指定参考图
+$scene = new EnhancedScene(
+    id: 'scene-1',
+    order: 1,
+    description: '古风建筑，桃花树下',
+    type: SceneType::MAIN,
+    referenceImage: 'https://example.com/ancient-style.jpg',
+    referenceVideo: 'https://example.com/motion-ref.mp4',
 );
+```
+
+### 自定义转场效果
+
+```php
+use Kode\AiAgent\Drama\TransitionManager;
+use Kode\AiAgent\Video\VideoComposerV3;
+
+$composer = new VideoComposerV3();
+
+// 添加多种转场
+$composer->addTransition('scene-1', 'scene-2', TransitionType::FADE, 1);
+$composer->addTransition('scene-2', 'scene-3', TransitionType::SLIDE_LEFT, 1);
+$composer->addTransition('scene-3', 'scene-4', TransitionType::ZOOM_IN, 2);
+
+// 设置开场/结尾
+$composer->setOpening(FrameVideo::opening('https://cdn.example.com/intro.mp4', [
+    'title' => '精彩故事即将开始',
+    'duration' => 5,
+]));
+
+$composer->setClosing(FrameVideo::closing('https://cdn.example.com/outro.mp4', [
+    'ending_text' => '感谢观看',
+    'duration' => 10,
+]));
+
+// 合成
+$result = $composer->compose();
+echo $result['output'];
+```
+
+## AI 字幕生成器 (v2.0+)
+
+支持从视频/音频自动生成字幕，兼容多种格式。
+
+### 核心功能
+
+| 功能 | 说明 |
+|------|------|
+| 语音转字幕 | 从视频/音频自动识别生成字幕 |
+| 多格式支持 | SRT、VTT、ASS、JSON |
+| 批量生成 | 多个视频批量生成字幕 |
+| 字幕编辑 | 加载、解析、格式化字幕 |
+
+### 使用示例
+
+```php
+use Kode\AiAgent\Subtitle\{SubtitleGenerator, SubtitleFormat, SubtitleCue};
+
+$generator = new SubtitleGenerator($adapter);
+
+// 从视频生成字幕
+$subtitles = $generator->generateFromVideo('/path/to/video.mp4', [
+    'language' => 'zh-CN',
+    'format' => SubtitleFormat::SRT,
+]);
+
+// 保存字幕
+$generator->save($subtitles, '/path/to/subtitles.srt', SubtitleFormat::SRT);
+
+// 加载字幕
+$subtitles = $generator->load('/path/to/subtitles.srt');
+
+// 格式化输出
+$content = $generator->formatSubtitles($subtitles, SubtitleFormat::VTT);
+```
+
+## 配音/旁白生成器 (v2.0+)
+
+支持文本转语音，用于视频旁白、解说等场景。
+
+### 核心功能
+
+| 功能 | 说明 |
+|------|------|
+| 文本转语音 | 单段/批量文本转音频 |
+| 多角色 | 旁白、男声、女声等 |
+| 多风格 | 自然、专业、友好、情感等 |
+| 音频合并 | 多段音频合并 |
+| 音视频混合 | 配音与视频合成 |
+
+### 使用示例
+
+```php
+use Kode\AiAgent\Voice\{VoiceoverGenerator, VoiceRole, VoiceStyle, VoiceSegment};
+
+$generator = new VoiceoverGenerator($adapter);
+
+// 单段配音
+$audioPath = $generator->generate('欢迎观看今天的节目', [
+    'role' => VoiceRole::NARRATOR,
+    'style' => VoiceStyle::FRIENDLY,
+]);
+
+// 多段配音
+$audioPaths = $generator->generateBatch([
+    new VoiceSegment('第一段内容', VoiceRole::MALE),
+    new VoiceSegment('第二段内容', VoiceRole::FEMALE),
+]);
+
+// 合并音频
+$mergedAudio = $generator->mergeAudio($audioPaths);
+
+// 为视频添加配音
+$outputVideo = $generator->addToVideo('/path/to/video.mp4', $mergedAudio);
+```
+
+## 视频剪辑器 (v2.0+)
+
+强大的视频剪辑功能，支持剪裁、分割、变速、旋转、裁剪等。
+
+### 剪辑操作
+
+| 操作 | 说明 | 示例 |
+|------|------|------|
+| cut | 剪裁 | 裁剪指定时间段 |
+| trim | 修剪 | 去除首尾 |
+| split | 分割 | 按时长分割 |
+| speed | 变速 | 加速/减速播放 |
+| reverse | 倒放 | 视频倒放 |
+| rotate | 旋转 | 90°/180°/270° |
+| crop | 裁剪 | 裁剪画面区域 |
+| scale | 缩放 | 调整分辨率 |
+
+### 使用示例
+
+```php
+use Kode\AiAgent\Video\VideoClipper;
+
+$clipper = new VideoClipper();
+
+// 剪裁视频
+$clipper->cut('/path/to/video.mp4', 10, 30);
+
+// 变速播放 (2倍速)
+$clipper->setSpeed('/path/to/video.mp4', 2.0);
+
+// 旋转视频
+$clipper->rotate('/path/to/video.mp4', 90);
+
+// 分割视频
+$chunks = $clipper->split('/path/to/video.mp4', 60);
+
+// 批量操作
+$clipper->execute('/path/to/video.mp4', [
+    new ClipOperationConfig(ClipOperation::CROP, ['width' => 1920, 'height' => 1080]),
+    new ClipOperationConfig(ClipOperation::SPEED, ['speed' => 1.5]),
+]);
+
+// 获取视频信息
+$info = $clipper->getInfo('/path/to/video.mp4');
+echo $info['duration'];
+echo $info['video']['width'];
+```
+
+## 工作流预设模板 (v2.0+)
+
+提供多种预定义工作流模板，简化视频生成配置。
+
+### 预设类型
+
+| 类型 | 说明 | 适用场景 |
+|------|------|----------|
+| `short_drama` | 短剧模板 | 短视频平台 |
+| `product_showcase` | 产品展示 | 电商平台 |
+| `education` | 教育视频 | 在线课程 |
+| `news` | 新闻视频 | 新闻播报 |
+| `social_media` | 社交媒体 | 抖音/快手 |
+| `vlog` | Vlog模板 | 个人生活 |
+| `commercial` | 商业广告 | 品牌宣传 |
+| `music_video` | 音乐视频 | MV制作 |
+
+### 使用示例
+
+```php
+use Kode\AiAgent\Workflow\{WorkflowPresetManager, PresetType};
+
+$manager = new WorkflowPresetManager();
+
+// 获取预设模板
+$preset = $manager->get(PresetType::SHORT_DRAMA);
+
+// 应用模板生成短剧
+$result = $agent->generate($script, $preset->config);
+
+// 自定义模板
+$custom = $manager->createCustom('my_template', [
+    'scenes' => 10,
+    'transition_type' => 'fade',
+    'opening' => ['title' => '我的短剧'],
+]);
+
+// 合并配置
+$merged = $preset->merge(['scenes' => 8]);
 ```
 
 ## 日志系统 (Monolog 集成)
