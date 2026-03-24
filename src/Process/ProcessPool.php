@@ -6,18 +6,52 @@ namespace Kode\AiAgent\Process;
 
 use Kode\AiAgent\Log\LogManager;
 
+/**
+ * 进程池
+ *
+ * 管理多个系统进程的并发执行，支持进程提交、批量执行、并发控制和结果回收。
+ * 自动维护并发数量，常用于视频处理等需要执行外部命令的场景。
+ *
+ * @package Kode\AiAgent\Process
+ *
+ * @example
+ * ```php
+ * $pool = new ProcessPool(maxProcesses: 4);
+ *
+ * // 提交视频处理任务
+ * $pool->submit('ffmpeg -i input.mp4 -vf "scale=1920:1080" output_1080p.mp4');
+ * $pool->submit('ffmpeg -i input.mp4 -vf "scale=1280:720" output_720p.mp4');
+ *
+ * // 执行并等待完成
+ * $outputs = $pool->runAndWait(function ($pid, $output) {
+ *     echo "[PID {$pid}] {$output}\n";
+ * });
+ * ```
+ */
 final class ProcessPool
 {
-    /** @var Process[] */
+    /** @var Process[] 进程列表 */
     private array $processes = [];
     private int $maxProcesses;
     private int $activeCount = 0;
 
+    /**
+     * 创建进程池
+     *
+     * @param int $maxProcesses 最大并发进程数，默认 4
+     */
     public function __construct(int $maxProcesses = 4)
     {
         $this->maxProcesses = max(1, $maxProcesses);
     }
 
+    /**
+     * 提交单个进程任务
+     *
+     * @param string $command 要执行的命令
+     * @param array $options 配置选项
+     * @return Process 进程实例
+     */
     public function submit(string $command, array $options = []): Process
     {
         $process = new Process($command, $options);
@@ -26,11 +60,24 @@ final class ProcessPool
         return $process;
     }
 
+    /**
+     * 批量提交进程任务
+     *
+     * @param array $commands 命令数组
+     * @return Process[] 进程实例数组
+     */
     public function submitBatch(array $commands): array
     {
         return array_map(fn($cmd) => $this->submit($cmd), $commands);
     }
 
+    /**
+     * 执行所有进程任务
+     *
+     * 启动所有进程，当进程数达到上限时等待完成后再启动新进程。
+     *
+     * @param callable|null $onOutput 输出回调，接受 (进程ID, 输出内容) 参数
+     */
     public function run(callable $onOutput = null): void
     {
         foreach ($this->processes as $process) {
@@ -46,6 +93,12 @@ final class ProcessPool
         $this->waitForAll($onOutput);
     }
 
+    /**
+     * 执行并等待所有进程完成
+     *
+     * @param callable|null $onOutput 输出回调
+     * @return array 所有进程的输出
+     */
     public function runAndWait(callable $onOutput = null): array
     {
         $this->run($onOutput);
@@ -53,6 +106,9 @@ final class ProcessPool
         return array_map(fn($p) => $p->getOutput(), $this->processes);
     }
 
+    /**
+     * 检查是否有进程正在运行
+     */
     public function isRunning(): bool
     {
         foreach ($this->processes as $process) {
@@ -64,6 +120,11 @@ final class ProcessPool
         return false;
     }
 
+    /**
+     * 等待所有进程执行完成
+     *
+     * @param callable|null $onOutput 输出回调
+     */
     public function waitForAll(callable $onOutput = null): void
     {
         while ($this->isRunning()) {
@@ -83,6 +144,9 @@ final class ProcessPool
         }
     }
 
+    /**
+     * 终止所有进程
+     */
     public function terminate(): void
     {
         foreach ($this->processes as $process) {
@@ -92,11 +156,17 @@ final class ProcessPool
         }
     }
 
+    /**
+     * 获取进程总数
+     */
     public function count(): int
     {
         return count($this->processes);
     }
 
+    /**
+     * 获取正在运行的进程数
+     */
     public function activeCount(): int
     {
         $count = 0;
@@ -110,6 +180,9 @@ final class ProcessPool
         return $count;
     }
 
+    /**
+     * 等待有可用槽位
+     */
     private function waitForAvailable(): void
     {
         while ($this->activeCount >= $this->maxProcesses) {
@@ -124,6 +197,9 @@ final class ProcessPool
         }
     }
 
+    /**
+     * 等待进程完成
+     */
     private function waitForCompletion(): void
     {
         $startTime = microtime(true);
@@ -141,7 +217,7 @@ final class ProcessPool
         }
 
         if ((microtime(true) - $startTime) >= $timeout) {
-            LogManager::warning('ProcessPool timeout waiting for completion');
+            LogManager::warning('进程池等待完成超时');
         }
     }
 }

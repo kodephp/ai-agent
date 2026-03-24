@@ -1,17 +1,22 @@
 # Kode AI Agent 高级功能开发指南
 
-本指南详细介绍 kode/ai-agent 的高级功能，包括分工代理、主管 Agent、成本追踪、协程安全、记忆系统、重试策略等特性。
+本指南详细介绍 kode/ai-agent 的高级功能，包括分工代理、主管 Agent、成本追踪、协程安全、记忆系统、重试策略、短剧生成、日志系统、并行处理等企业级特性。
 
 ## 目录
 
-1. [主管 Agent（SupervisorAgent）](#1-主管-agentsupervisoragent)
+1. [主管 Agent（SupervisorAgent）](#1-主管-agent-supervisoragent)
 2. [执行上下文（ExecutionContext）](#2-执行上下文-executioncontext)
 3. [成本追踪器（CostTracker）](#3-成本追踪器-costtracker)
 4. [记忆系统（AgentMemory）](#4-记忆系统-agentmemory)
 5. [重试策略（RetryStrategy）](#5-重试策略-retrystrategy)
 6. [协程安全编程](#6-协程安全编程)
-7. [完整使用案例](#7-完整使用案例)
-8. [最佳实践](#8-最佳实践)
+7. [短剧生成系统（DramAgent）](#7-短剧生成系统-dramagent)
+8. [日志系统（Monolog）](#8-日志系统-monolog-集成)
+9. [并行处理（Fiber/协程）](#9-并行处理-fiber协程)
+10. [进程管理](#10-进程管理)
+11. [视频合成](#11-视频合成)
+12. [完整使用案例](#12-完整使用案例)
+13. [最佳实践](#13-最佳实践)
 
 ---
 
