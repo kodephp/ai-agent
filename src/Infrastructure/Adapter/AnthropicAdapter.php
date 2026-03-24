@@ -18,7 +18,7 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-final readonly class AnthropicAdapter implements AdapterInterface
+readonly class AnthropicAdapter implements AdapterInterface
 {
     use StreamHelper;
 

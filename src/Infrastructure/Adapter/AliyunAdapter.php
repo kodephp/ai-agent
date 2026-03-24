@@ -23,7 +23,7 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-final readonly class AliyunAdapter implements AdapterInterface
+readonly class AliyunAdapter implements AdapterInterface
 {
     use StreamHelper;
 

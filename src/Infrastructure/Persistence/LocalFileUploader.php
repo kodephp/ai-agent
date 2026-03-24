@@ -16,7 +16,7 @@ use Kode\AiAgent\Exception\InvalidInputException;
  * 
  * @package Kode\AiAgent\Infrastructure\Persistence
  */
-final readonly class LocalFileUploader implements FileUploaderInterface
+readonly class LocalFileUploader implements FileUploaderInterface
 {
     public function __construct(
         private string $uploadDir,

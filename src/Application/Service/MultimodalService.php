@@ -12,7 +12,7 @@ use Kode\AiAgent\Exception\InvalidInputException;
 use Kode\AiAgent\Exception\PlatformException;
 use Psr\Log\LoggerInterface;
 
-final readonly class MultimodalService
+readonly class MultimodalService
 {
     private const MAX_TEXT_LENGTH = 10000;
 

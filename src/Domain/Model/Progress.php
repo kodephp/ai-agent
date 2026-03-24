@@ -11,7 +11,7 @@ namespace Kode\AiAgent\Domain\Model;
  * 
  * @package Kode\AiAgent\Domain\Model
  */
-final readonly class Progress
+readonly class Progress
 {
     public const STATUS_PENDING = 'pending';
     public const STATUS_UPLOADING = 'uploading';

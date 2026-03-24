@@ -38,7 +38,7 @@ use Nyholm\Psr7\Request;
  * ]);
  * ```
  */
-final readonly class BaiduAdapter implements AdapterInterface
+readonly class BaiduAdapter implements AdapterInterface
 {
     use StreamHelper;
 

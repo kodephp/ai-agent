@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Drama;
 
-final readonly class SceneVideo
+readonly class SceneVideo
 {
     public function __construct(
         public string $sceneId,

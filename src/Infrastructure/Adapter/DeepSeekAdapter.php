@@ -18,7 +18,7 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-final readonly class DeepSeekAdapter implements AdapterInterface
+readonly class DeepSeekAdapter implements AdapterInterface
 {
     use StreamHelper;
 

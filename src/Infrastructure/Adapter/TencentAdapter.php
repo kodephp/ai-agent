@@ -30,7 +30,7 @@ use Nyholm\Psr7\Request;
  * ]);
  * ```
  */
-final readonly class TencentAdapter implements AdapterInterface
+readonly class TencentAdapter implements AdapterInterface
 {
     use StreamHelper;
 

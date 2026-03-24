@@ -21,7 +21,7 @@ namespace Kode\AiAgent\Attribute;
  * ```
  */
 #[\Attribute(\Attribute::TARGET_METHOD)]
-final readonly class RateLimit
+readonly class RateLimit
 {
     /**
      * @param int $requests 请求数量

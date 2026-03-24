@@ -21,7 +21,7 @@ namespace Kode\AiAgent\Attribute;
  * ```
  */
 #[\Attribute(\Attribute::TARGET_CLASS)]
-final readonly class Agent
+readonly class Agent
 {
     /**
      * @param string $name 代理名称

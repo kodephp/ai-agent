@@ -18,7 +18,7 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-final readonly class GeminiAdapter implements AdapterInterface
+readonly class GeminiAdapter implements AdapterInterface
 {
     use StreamHelper;
 

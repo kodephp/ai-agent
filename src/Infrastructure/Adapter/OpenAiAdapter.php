@@ -18,7 +18,7 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-final readonly class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
+readonly class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
 {
     use StreamHelper;
 

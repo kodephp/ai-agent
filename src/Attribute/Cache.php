@@ -21,7 +21,7 @@ namespace Kode\AiAgent\Attribute;
  * ```
  */
 #[\Attribute(\Attribute::TARGET_METHOD)]
-final readonly class Cache
+readonly class Cache
 {
     /**
      * @param int $ttl 缓存时间(秒)

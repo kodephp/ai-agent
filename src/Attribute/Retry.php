@@ -21,7 +21,7 @@ namespace Kode\AiAgent\Attribute;
  * ```
  */
 #[\Attribute(\Attribute::TARGET_METHOD)]
-final readonly class Retry
+readonly class Retry
 {
     /**
      * @param int $maxAttempts 最大重试次数

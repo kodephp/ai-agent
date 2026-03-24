@@ -24,7 +24,7 @@ namespace Kode\AiAgent\Attribute;
  * ```
  */
 #[\Attribute(\Attribute::TARGET_METHOD)]
-final readonly class Tool
+readonly class Tool
 {
     /**
      * @param string $name 工具名称

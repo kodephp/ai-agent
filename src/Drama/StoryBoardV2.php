@@ -11,7 +11,7 @@ namespace Kode\AiAgent\Drama;
  *
  * @package Kode\AiAgent\Drama
  */
-final readonly class StoryBoardV2
+readonly class StoryBoardV2
 {
     public function __construct(
         public string $id,

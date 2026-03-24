@@ -31,7 +31,7 @@ use Nyholm\Psr7\Request;
  * ]);
  * ```
  */
-final readonly class XunfeiAdapter implements AdapterInterface
+readonly class XunfeiAdapter implements AdapterInterface
 {
     use StreamHelper;
 
