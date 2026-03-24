@@ -514,6 +514,308 @@ $supervisor->register('summarizer',
 
 ---
 
-**版本**: v1.7.0
-**更新日期**: 2026-03-06
+**版本**: v1.8.0
+**更新日期**: 2026-03-24
 **维护者**: KodePHP Team
+
+---
+
+## 9. 短剧生成系统（DramAgent）
+
+### 9.1 概述
+
+DramAgent 提供完整的短剧生成工作流，支持一键生成短视频：
+
+1. **剧本解析**：将剧本拆分为多个场景
+2. **场景图像生成**：使用 AI 生成每个场景的图像
+3. **图像转视频**：将静态图像转换为动态视频
+4. **数字人合成**：添加数字人口播内容
+5. **视频合成**：将多个视频片段合并为完整短剧
+
+### 9.2 基本使用
+
+```php
+use Kode\AiAgent\Drama\DramAgent;
+use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+use Kode\AiAgent\Log\LogManager;
+
+// 初始化日志
+LogManager::init(['env' => 'dev']);
+
+// 创建 DramAgent
+$agent = new DramAgent(
+    adapter: AdapterFactory::openai('sk-xxx'),
+    config: [
+        'scenes' => 5,
+        'duration_per_scene' => 10,
+        'style' => 'cinematic',
+        'enable_parallel' => true,
+        'concurrency' => 4,
+    ],
+);
+
+// 一键生成短剧
+$result = $agent->generate('在一个阳光明媚的早晨，小明和小红相遇了...');
+
+echo "视频地址: {$result->video}\n";
+echo "总时长: {$result->duration}秒\n";
+```
+
+### 9.3 分步生成
+
+```php
+// 1. 解析剧本
+$storyBoard = $agent->parseScript($script, [
+    'scenes' => 8,
+    'style' => 'cinematic',
+]);
+
+// 2. 生成场景图像
+$scenes = $agent->generateSceneImages($storyBoard);
+
+// 3. 生成场景视频
+$videos = $agent->generateSceneVideos($scenes, [
+    'video_resolution' => '1080p',
+]);
+
+// 4. 合成最终视频
+$finalVideo = $agent->composeFinalVideo($videos, [
+    'transition' => 'fade',
+    'background_music' => '/path/to/music.mp3',
+]);
+```
+
+### 9.4 带数字人的短剧
+
+```php
+$result = $agent->generateWithAvatar(
+    script: '今天给大家介绍一款新产品...',
+    avatarOptions: [
+        'avatar_id' => 'default-female',
+        'voice_id' => 'voice-female-zh',
+        'language' => 'zh-CN',
+    ],
+    dramaOptions: [
+        'scenes' => 5,
+    ]
+);
+```
+
+---
+
+## 10. 日志系统（Monolog 集成）
+
+### 10.1 日志管理器
+
+```php
+use Kode\AiAgent\Log\LogManager;
+
+// 初始化
+LogManager::init([
+    'env' => 'dev',
+    'enabled' => true,
+]);
+
+// 静态调用
+LogManager::info('消息发送成功', ['message_id' => 'xxx']);
+LogManager::error('请求失败', ['error' => $e->getMessage()]);
+LogManager::warning('频率限制触发', ['retry_after' => 60]);
+```
+
+### 10.2 敏感信息脱敏
+
+自动脱敏敏感字段：
+
+```php
+LogManager::info('API请求', [
+    'api_key' => 'sk-xxx',        // → ***REDACTED***
+    'token' => 'Bearer xxx',      // → ***REDACTED***
+    'password' => 'secret',        // → ***REDACTED***
+    'message' => 'hello',          // 保持原样
+]);
+```
+
+### 10.3 日志工厂
+
+```php
+use Kode\AiAgent\Log\LoggerFactory;
+
+// 文件日志
+$logger = LoggerFactory::create([
+    'channel' => 'ai-agent',
+    'level' => 'debug',
+    'path' => 'var/log/ai-agent.log',
+    'env' => 'prod',
+]);
+
+// 控制台日志
+$console = LoggerFactory::console([
+    'level' => 'debug',
+    'output' => 'php://stdout',
+]);
+```
+
+---
+
+## 11. 并行处理（Fiber/协程）
+
+### 11.1 Fiber 池
+
+```php
+use Kode\AiAgent\Async\FiberPool;
+
+// 创建并发池
+$pool = new FiberPool(concurrency: 10);
+
+// 提交任务
+$tasks = [];
+for ($i = 0; $i < 20; $i++) {
+    $tasks[] = $pool->submit(fn() => processImage($i));
+}
+
+// 批量执行
+$pool->run();
+
+// 获取结果
+foreach ($tasks as $task) {
+    $result = $task->getResult();
+}
+```
+
+### 11.2 并行执行器
+
+```php
+use Kode\AiAgent\Async\ParallelExecutor;
+
+// 创建执行器
+$executor = new ParallelExecutor(
+    concurrency: 4,
+    enableParallel: true
+);
+
+// 批量执行
+$results = $executor->executeBatch([
+    fn() => generateImage('场景1描述'),
+    fn() => generateImage('场景2描述'),
+    fn() => generateImage('场景3描述'),
+    fn() => generateImage('场景4描述'),
+], function ($completed, $total) {
+    echo "进度: {$completed}/{$total}\n";
+});
+
+// Map 操作
+$images = $executor->map($prompts, fn($p) => generateImage($p));
+```
+
+---
+
+## 12. 进程管理
+
+### 12.1 进程池
+
+```php
+use Kode\AiAgent\Process\ProcessPool;
+
+// 创建进程池
+$pool = new ProcessPool(maxProcesses: 4);
+
+// 提交视频处理任务
+$pool->submit('ffmpeg -i input.mp4 -vf "scale=1920:1080" output_1080p.mp4');
+$pool->submit('ffmpeg -i input.mp4 -vf "scale=1280:720" output_720p.mp4');
+$pool->submit('ffmpeg -i input.mp4 -vn -acodec mp3 output.mp3');
+
+// 执行并等待
+$outputs = $pool->runAndWait(function ($pid, $output) {
+    echo "[PID {$pid}] {$output}\n";
+});
+```
+
+### 12.2 单个进程
+
+```php
+use Kode\AiAgent\Process\Process;
+
+// 创建进程
+$process = new Process('ffmpeg -i input.mp4 output.mp4', [
+    'timeout' => 300,
+    'buffer_size' => 8192,
+]);
+
+// 启动
+$process->start();
+
+// 监控输出
+while ($process->isRunning()) {
+    $output = $process->update();
+    if ($output) {
+        echo $output;
+    }
+}
+
+// 等待完成
+$process->wait();
+
+// 获取结果
+echo $process->getOutput();
+echo "Exit code: " . $process->getExitCode();
+```
+
+---
+
+## 13. 视频合成
+
+### 13.1 VideoComposerV2
+
+```php
+use Kode\AiAgent\Video\VideoComposerV2;
+
+// 创建合成器
+$composer = new VideoComposerV2(
+    logger: null,
+    concurrency: 4,
+    config: ['output_dir' => 'var/drama/output']
+);
+
+// 合成场景视频
+$output = $composer->compose($sceneVideos, [
+    'transition' => 'fade',
+    'background_music' => '/path/to/music.mp3',
+    'music_volume' => 0.3,
+]);
+```
+
+### 13.2 视频合并
+
+```php
+// 合并多个视频
+$output = $composer->concatenate([
+    '/path/to/video1.mp4',
+    '/path/to/video2.mp4',
+    '/path/to/video3.mp4',
+], ['format' => 'mp4']);
+```
+
+### 13.3 视频分段
+
+```php
+// 按时长分段
+$chunks = $composer->split('/path/to/long-video.mp4', 60);
+
+foreach ($chunks as $chunk) {
+    echo "分段: {$chunk['path']}, 时长: {$chunk['duration']}秒\n";
+}
+```
+
+### 13.4 添加水印
+
+```php
+$watermarked = $composer->addWatermark(
+    '/path/to/video.mp4',
+    '/path/to/watermark.png',
+    [
+        'position' => '右下',
+        'opacity' => 0.3,
+        'scale' => 0.2,
+    ]
+);
+```
