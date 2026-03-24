@@ -7,7 +7,7 @@ namespace Kode\AiAgent\Process;
 use Kode\AiAgent\Log\LogManager;
 
 /**
- * 进程封装类
+ * 系统进程封装类
  *
  * 基于 proc_open/pcntl 实现系统进程管理，支持进程启动、监控、等待、终止等操作。
  * 用于执行外部命令（如 ffmpeg 视频处理）并获取执行结果。
@@ -16,7 +16,7 @@ use Kode\AiAgent\Log\LogManager;
  *
  * @example
  * ```php
- * $process = new Process('ffmpeg -i input.mp4 output.mp4', [
+ * $process = new SystemProcess('ffmpeg -i input.mp4 output.mp4', [
  *     'timeout' => 300,
  * ]);
  *
@@ -27,12 +27,13 @@ use Kode\AiAgent\Log\LogManager;
  * echo "Exit code: " . $process->getExitCode();
  * ```
  */
-final class Process
+final class SystemProcess
 {
     private string $command;
     private array $options;
     private ?int $pid = null;
-    private ?resource $handle = null;
+    /** @var resource|false */
+    private $handle = false;
     private string $output = '';
     private string $errorOutput = '';
     private string $status = 'pending';
@@ -90,7 +91,7 @@ final class Process
             $env
         );
 
-        if (!is_resource($this->handle)) {
+        if ($this->handle === false) {
             throw new \RuntimeException("进程启动失败: {$this->command}");
         }
 
@@ -98,7 +99,8 @@ final class Process
             stream_set_blocking($pipe, false);
         }
 
-        $this->pid = proc_get_status($this->handle)['pid'];
+        $status = proc_get_status($this->handle);
+        $this->pid = $status['pid'] ?? null;
         $this->status = 'running';
         $this->startTime = microtime(true);
 
@@ -119,28 +121,28 @@ final class Process
      */
     public function update(): ?string
     {
-        if ($this->status !== 'running' || !is_resource($this->handle)) {
+        if ($this->status !== 'running' || $this->handle === false) {
             return null;
         }
 
         $output = '';
-        $pipes = proc_get_status($this->handle);
+        $status = proc_get_status($this->handle);
 
-        if ($pipes['pipe']) {
-            while ($data = fread($pipes['pipe'], $this->options['buffer_size'])) {
+        if (isset($status['pipe']) && is_resource($status['pipe'])) {
+            while ($data = fread($status['pipe'], $this->options['buffer_size'])) {
                 $output .= $data;
             }
         }
 
-        if ($pipes['pipe']) {
-            while ($data = fread($pipes['pipe'], $this->options['buffer_size'])) {
+        if (isset($status['pipe']) && is_resource($status['pipe'])) {
+            while ($data = fread($status['pipe'], $this->options['buffer_size'])) {
                 $this->errorOutput .= $data;
             }
         }
 
-        if (!$pipes['running']) {
+        if (!$status['running']) {
             $this->status = 'completed';
-            $this->exitCode = $pipes['exitcode'];
+            $this->exitCode = $status['exitcode'] ?? -1;
             $this->endTime = microtime(true);
 
             LogManager::info('进程执行完成', [
@@ -181,7 +183,7 @@ final class Process
      */
     public function terminate(): self
     {
-        if ($this->status === 'running' && is_resource($this->handle)) {
+        if ($this->status === 'running' && $this->handle !== false) {
             proc_terminate($this->handle, SIGTERM);
             $this->status = 'terminated';
             $this->endTime = microtime(true);
@@ -199,7 +201,7 @@ final class Process
      */
     public function kill(): self
     {
-        if ($this->status === 'running' && is_resource($this->handle)) {
+        if ($this->status === 'running' && $this->handle !== false) {
             proc_terminate($this->handle, SIGKILL);
             $this->status = 'killed';
             $this->endTime = microtime(true);
@@ -215,7 +217,7 @@ final class Process
      */
     public function isRunning(): bool
     {
-        return $this->status === 'running' && is_resource($this->handle);
+        return $this->status === 'running' && $this->handle !== false;
     }
 
     /**
@@ -280,14 +282,11 @@ final class Process
      */
     public function __destruct()
     {
-        if (is_resource($this->handle)) {
-            foreach ([0, 1, 2] as $fd) {
-                $pipe = fopen("php://fd/{$fd}", 'r');
-                if ($pipe !== false) {
-                    fclose($pipe);
-                }
+        if ($this->handle !== false) {
+            if (is_resource($this->handle)) {
+                proc_close($this->handle);
             }
-            proc_close($this->handle);
+            $this->handle = false;
         }
     }
 }

@@ -7,7 +7,7 @@ namespace Kode\AiAgent\Process;
 use Kode\AiAgent\Log\LogManager;
 
 /**
- * 进程池
+ * 系统进程池
  *
  * 管理多个系统进程的并发执行，支持进程提交、批量执行、并发控制和结果回收。
  * 自动维护并发数量，常用于视频处理等需要执行外部命令的场景。
@@ -16,7 +16,7 @@ use Kode\AiAgent\Log\LogManager;
  *
  * @example
  * ```php
- * $pool = new ProcessPool(maxProcesses: 4);
+ * $pool = new ProcessPoolManager(maxProcesses: 4);
  *
  * // 提交视频处理任务
  * $pool->submit('ffmpeg -i input.mp4 -vf "scale=1920:1080" output_1080p.mp4');
@@ -28,9 +28,9 @@ use Kode\AiAgent\Log\LogManager;
  * });
  * ```
  */
-final class ProcessPool
+final class ProcessPoolManager
 {
-    /** @var Process[] 进程列表 */
+    /** @var SystemProcess[] 进程列表 */
     private array $processes = [];
     private int $maxProcesses;
     private int $activeCount = 0;
@@ -50,11 +50,11 @@ final class ProcessPool
      *
      * @param string $command 要执行的命令
      * @param array $options 配置选项
-     * @return Process 进程实例
+     * @return SystemProcess 进程实例
      */
-    public function submit(string $command, array $options = []): Process
+    public function submit(string $command, array $options = []): SystemProcess
     {
-        $process = new Process($command, $options);
+        $process = new SystemProcess($command, $options);
         $this->processes[] = $process;
 
         return $process;
@@ -64,7 +64,7 @@ final class ProcessPool
      * 批量提交进程任务
      *
      * @param array $commands 命令数组
-     * @return Process[] 进程实例数组
+     * @return SystemProcess[] 进程实例数组
      */
     public function submitBatch(array $commands): array
     {

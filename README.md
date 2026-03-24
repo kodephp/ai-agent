@@ -2028,10 +2028,10 @@ $images = $executor->map($prompts, fn($p) => generateImage($p));
 ### 进程池
 
 ```php
-use Kode\AiAgent\Process\ProcessPool;
+use Kode\AiAgent\Process\ProcessPoolManager;
 
 // 创建进程池
-$pool = new ProcessPool(maxProcesses: 4);
+$pool = new ProcessPoolManager(maxProcesses: 4);
 
 // 提交进程任务
 $pool->submit('ffmpeg -i input.mp4 output.mp4');
@@ -2043,10 +2043,10 @@ $pool->runAndWait();
 ### 单个进程
 
 ```php
-use Kode\AiAgent\Process\Process;
+use Kode\AiAgent\Process\SystemProcess;
 
 // 创建进程
-$process = new Process('ffmpeg -i input.mp4 output.mp4', [
+$process = new SystemProcess('ffmpeg -i input.mp4 output.mp4', [
     'timeout' => 300,
 ]);
 

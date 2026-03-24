@@ -719,10 +719,10 @@ $images = $executor->map($prompts, fn($p) => generateImage($p));
 ### 12.1 进程池
 
 ```php
-use Kode\AiAgent\Process\ProcessPool;
+use Kode\AiAgent\Process\ProcessPoolManager;
 
 // 创建进程池
-$pool = new ProcessPool(maxProcesses: 4);
+$pool = new ProcessPoolManager(maxProcesses: 4);
 
 // 提交视频处理任务
 $pool->submit('ffmpeg -i input.mp4 -vf "scale=1920:1080" output_1080p.mp4');
@@ -738,10 +738,10 @@ $outputs = $pool->runAndWait(function ($pid, $output) {
 ### 12.2 单个进程
 
 ```php
-use Kode\AiAgent\Process\Process;
+use Kode\AiAgent\Process\SystemProcess;
 
 // 创建进程
-$process = new Process('ffmpeg -i input.mp4 output.mp4', [
+$process = new SystemProcess('ffmpeg -i input.mp4 output.mp4', [
     'timeout' => 300,
     'buffer_size' => 8192,
 ]);
