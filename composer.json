@@ -1,9 +1,9 @@
 {
     "name": "kode/ai-agent",
-    "description": "企业级 PHP AI Agent 层，兼容 Symfony AI 生态。新增短剧生成 V2/V3（支持参考图/视频引导、转场效果、开场/结尾视频）、AI字幕生成、配音旁白生成、视频剪辑器、工作流预设模板等完整视频制作功能。支持 Monolog 日志、并行处理、进程管理等企业级特性。",
+    "description": "企业级 PHP AI Agent 框架，兼容 Symfony AI 生态。支持短剧生成（多 Agent 协作）、多模态（文生图/视频/数字人）、Monolog 日志、Fiber 协程、进程管理、AI 字幕、配音旁白、视频剪辑、工作流预设等企业级功能。",
     "type": "library",
     "license": "Apache-2.0",
-    "version": "2.0.0",
+    "version": "2.4.0",
     "autoload": {
         "psr-4": {
             "Kode\\AiAgent\\": "src/"
@@ -38,6 +38,11 @@
         "kode/attributes": "^1.0",
         "kode/facade": "^2.0",
         "monolog/monolog": "^3.0"
+    },
+    "suggest": {
+        "kode/fibers": "PHP Fiber 协程支持（可选，PHP 8.1+ 内置）",
+        "kode/process": "系统进程管理支持（可选）",
+        "symfony/process": "进程管理备选方案"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0",

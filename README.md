@@ -1,27 +1,25 @@
 # Kode AI Agent
 
-企业级 PHP AI Agent 层，兼容 Symfony AI 生态，支持协程、管道和 SSE 流式响应。
+企业级 PHP AI Agent 框架，兼容 Symfony AI 生态，支持多 Agent 协作、短剧生成、多模态（文生图/视频）、Fiber 协程、进程管理。
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## 特性
 
+- **多 Agent 协作**：主管 Agent + 分工 Agent，支持流水线、并行、串行模式
+- **短剧生成**：一键生成完整短剧（剧本→场景→文生图→图生视频→合成）
+- **多模态支持**：文本生成图像、文本生成视频、数字人视频生成
 - **六边形架构**：核心逻辑与外部依赖解耦，依赖方向正确
 - **多平台支持**：OpenAI、Anthropic Claude、DeepSeek、阿里云通义千问、Google Gemini、百度文心一言、腾讯混元、讯飞星火
 - **API Key 轮换**：支持单 Key、双 Key（主备）、多 Key 轮换模式
-- **工具调用循环**：自动处理 AI 工具调用，支持多轮调用
-- **管道中间件**：灵活的请求处理管道，支持缓存、限流、重试
-- **流式响应**：内置 SSE (Server-Sent Events) 支持
-- **向量数据库**：内置向量存储接口，支持 Milvus、Pinecone、Qdrant 等
-- **MCP 协议**：完整的 Model Context Protocol 支持
-- **安全增强**：HTTPS 强制检查、API Key 格式验证、日志脱敏
-- **PSR 标准**：完全兼容 PSR-7, PSR-18, PSR-17, PSR-3, PSR-11, PSR-16
-- **PHP 8.5 就绪**：支持 `#[NoDiscard]` 属性和管道操作符
-- **Kode 生态集成**：集成 kode/context、kode/facade、kode/http-client、kode/attributes
-- **多模态支持**：文本生成图像、文本生成视频、数字人视频生成
-- **文件上传**：支持视频、音频等媒体文件的安全上传
-- **进度跟踪**：实时任务进度反馈和状态管理
+- **Fiber 协程**：内置 FiberPool、ParallelExecutor，支持任务并行执行
+- **进程管理**：SystemProcess、ProcessPoolManager，支持多进程视频处理
+- **Monolog 日志**：分频道日志、自动脱敏、敏感信息保护
+- **AI 字幕**：从视频自动生成字幕，支持 SRT/VTT/ASS/JSON 格式
+- **配音旁白**：文本转语音，支持多角色、多风格
+- **视频剪辑**：剪裁、分割、变速、旋转、裁剪等
+- **工作流预设**：8 种预设模板（短剧/产品展示/教育/新闻等）
 
 ## 安装
 
