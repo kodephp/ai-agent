@@ -8,6 +8,7 @@ use Kode\AiAgent\Domain\Contract\ResponseInterface;
 use Kode\AiAgent\Exception\ConfigurationException;
 use Kode\AiAgent\Exception\PlatformException;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * 主管 Agent
@@ -25,7 +26,6 @@ use Psr\Log\LoggerInterface;
  * $supervisor->register('executor', $executorAdapter);
  *
  * $result = $supervisor->supervise('完成项目架构设计', [
- *     'task' => '分析需求并设计架构',
  *     'steps' => [
  *         ['role' => 'analyst', 'task' => '分析技术需求'],
  *         ['role' => 'executor', 'task' => '实现核心代码'],
@@ -33,19 +33,23 @@ use Psr\Log\LoggerInterface;
  * ]);
  * ```
  */
-final class SupervisorAgent
+class SupervisorAgent
 {
-    private array $workers = [];
+    use AgentTeamTrait;
+
     private array $roleDescriptions = [];
-    private CostTracker $costTracker;
     private bool $useContextStorage = false;
+    private ?Agent $supervisor = null;
+    private int $maxHistorySize = 100;
 
     public function __construct(
-        private Agent $supervisor,
-        private ?LoggerInterface $logger = null,
-        private int $maxHistorySize = 100,
+        ?Agent $supervisor = null,
+        ?LoggerInterface $logger = null,
+        int $maxHistorySize = 100,
     ) {
-        $this->costTracker = new CostTracker();
+        $this->initTeamTrait($logger, 'executor');
+        $this->supervisor = $supervisor;
+        $this->maxHistorySize = $maxHistorySize;
     }
 
     public function register(
@@ -53,35 +57,25 @@ final class SupervisorAgent
         Agent $agent,
         ?string $description = null
     ): self {
-        $this->workers[$role] = $agent;
+        $this->agents[$role] = $agent;
         $this->roleDescriptions[$role] = $description ?? "负责 {$role} 相关任务";
+        $this->logger->debug('Worker 已注册', ['role' => $role]);
         return $this;
     }
 
     public function hasWorker(string $role): bool
     {
-        return isset($this->workers[$role]);
+        return $this->has($role);
     }
 
     public function worker(string $role): Agent
     {
-        return $this->workers[$role]
-            ?? throw ConfigurationException::unsupportedPlatform($role);
+        return $this->agent($role);
     }
 
     public function workers(): array
     {
-        return $this->workers;
-    }
-
-    public function roles(): array
-    {
-        return array_keys($this->workers);
-    }
-
-    public function costTracker(): CostTracker
-    {
-        return $this->costTracker;
+        return $this->agents;
     }
 
     public function useContextStorage(bool $use = true): self
@@ -90,29 +84,25 @@ final class SupervisorAgent
         return $this;
     }
 
-    /**
-     * 获取执行历史（支持协程安全存储）
-     */
+    public function setSupervisor(Agent $supervisor): self
+    {
+        $this->supervisor = $supervisor;
+        return $this;
+    }
+
     public function executionHistory(): array
     {
         if ($this->useContextStorage) {
             return ExecutionContext::getHistoryFromContext();
         }
-
         return ExecutionContext::getHistoryFromContext();
     }
 
-    /**
-     * 清除执行历史
-     */
     public function clearHistory(): void
     {
         ExecutionContext::clearHistory();
     }
 
-    /**
-     * 主管监督执行多步骤任务
-     */
     public function supervise(string $goal, array $workflow, array $options = []): ResponseInterface
     {
         $options['use_context_storage'] = $this->useContextStorage;
@@ -153,14 +143,10 @@ final class SupervisorAgent
                 'attempts' => $context->attempts(),
                 'context_id' => $context->id(),
             ]);
-
             throw PlatformException::connectionFailed($goal, $e);
         }
     }
 
-    /**
-     * 并行执行多个任务
-     */
     public function parallel(array $tasks, array $options = []): array
     {
         $results = [];
@@ -188,9 +174,6 @@ final class SupervisorAgent
         return $results;
     }
 
-    /**
-     * 自动任务分解和执行
-     */
     public function auto(string $task, array $options = []): ResponseInterface
     {
         $options['use_context_storage'] = $this->useContextStorage;
@@ -212,15 +195,16 @@ final class SupervisorAgent
             $decomposed = $this->decompose($task, $options);
 
             if (count($decomposed) === 1) {
-                $role = $this->route($task);
+                $role = $this->routeByKeyword($task);
                 $response = $this->dispatch($role, $task, $options);
                 $context->complete(['single_task' => true]);
                 return $response;
             }
 
-            $workflow = array_map(function ($step) {
-                return ['role' => $step['role'], 'task' => $step['task']];
-            }, $decomposed);
+            $workflow = array_map(fn($step) => [
+                'role' => $step['role'],
+                'task' => $step['task'],
+            ], $decomposed);
 
             $context->complete();
             return $this->supervise($task, $workflow, $options);
@@ -230,27 +214,21 @@ final class SupervisorAgent
         }
     }
 
-    /**
-     * 在新的执行上下文中运行（协程安全）
-     */
     public function runWithContext(string $goal, array $workflow, array $options = []): ResponseInterface
     {
         return ExecutionContext::run(function ($context) use ($goal, $workflow, $options) {
             $this->log('info', '在协程安全的执行上下文中运行', [
                 'context_id' => $context->id(),
             ]);
-
             return $this->supervise($goal, $workflow, $options);
         });
     }
 
-    /**
-     * 规划任务执行流程
-     */
     private function plan(string $goal, array $workflow, array $options = []): array
     {
         $planPrompt = $this->buildPlanningPrompt($goal, $workflow);
-        $response = $this->supervisor->chat($planPrompt, $options);
+        $response = $this->supervisor?->chat($planPrompt, $options)
+            ?? $this->dispatch('supervisor', $planPrompt, $options);
 
         return [
             'goal' => $goal,
@@ -260,9 +238,6 @@ final class SupervisorAgent
         ];
     }
 
-    /**
-     * 执行计划
-     */
     private function executePlan(array $plan, array $options = []): array
     {
         $results = [];
@@ -291,9 +266,6 @@ final class SupervisorAgent
         return $results;
     }
 
-    /**
-     * 综合结果
-     */
     private function synthesize(string $goal, array $results): ResponseInterface
     {
         $synthesisPrompt = "基于以下执行结果，综合回答原始目标。\n\n原始目标：{$goal}\n\n执行结果：\n";
@@ -302,12 +274,10 @@ final class SupervisorAgent
             $synthesisPrompt .= "【{$result['role']}】{$result['content']}\n\n";
         }
 
-        return $this->supervisor->chat($synthesisPrompt);
+        return $this->supervisor?->chat($synthesisPrompt)
+            ?? $this->dispatch('supervisor', $synthesisPrompt, []);
     }
 
-    /**
-     * 自动任务分解
-     */
     private function decompose(string $task, array $options = []): array
     {
         $rolesList = implode(', ', $this->roles());
@@ -315,10 +285,11 @@ final class SupervisorAgent
         $decomposePrompt = "将以下任务分解为多个子任务，并分配给合适的角色。\n\n"
             . "可用角色：{$rolesList}\n\n"
             . "任务：{$task}\n\n"
-            . "请按以下 JSON 格式返回：\n"
+            . '请按以下 JSON 格式返回：' . "\n"
             . '[{"role": "角色名", "task": "子任务描述"}]';
 
-        $response = $this->supervisor->chat($decomposePrompt, $options);
+        $response = $this->supervisor?->chat($decomposePrompt, $options)
+            ?? $this->dispatch('supervisor', $decomposePrompt, $options);
 
         $json = $this->extractJson($response->content());
 
@@ -329,10 +300,7 @@ final class SupervisorAgent
         return $json;
     }
 
-    /**
-     * 路由任务到合适的 Agent
-     */
-    private function route(string $task): string
+    private function routeByKeyword(string $task): string
     {
         $taskLower = mb_strtolower($task);
 
@@ -350,7 +318,7 @@ final class SupervisorAgent
         ];
 
         foreach ($keywordMap as $keyword => $role) {
-            if (str_contains($taskLower, $keyword) && $this->hasWorker($role)) {
+            if (str_contains($taskLower, $keyword) && $this->has($role)) {
                 return $role;
             }
         }
@@ -358,32 +326,6 @@ final class SupervisorAgent
         return $this->roles()[0] ?? 'default';
     }
 
-    /**
-     * 分发任务到指定角色
-     */
-    private function dispatch(string $role, string $task, array $options = []): ResponseInterface
-    {
-        $agent = $this->worker($role);
-        $response = $agent->chat($task, $options);
-
-        if (isset($options['track_cost']) && $options['track_cost']) {
-            $usage = $response->usage();
-            $model = $options['model'] ?? 'default';
-
-            $this->costTracker->track(
-                model: $model,
-                promptTokens: $usage['prompt_tokens'] ?? 0,
-                completionTokens: $usage['completion_tokens'] ?? 0,
-                metadata: ['role' => $role, 'task' => substr($task, 0, 50)],
-            );
-        }
-
-        return $response;
-    }
-
-    /**
-     * 构建规划提示词
-     */
     private function buildPlanningPrompt(string $goal, array $workflow): string
     {
         $rolesDescription = "团队角色：\n";
@@ -411,9 +353,6 @@ final class SupervisorAgent
 PROMPT;
     }
 
-    /**
-     * 从文本中提取 JSON
-     */
     private function extractJson(string $text): ?array
     {
         if (preg_match('/\[[\s\S]*\]/', $text, $matches)) {
@@ -422,13 +361,9 @@ PROMPT;
                 return $json;
             }
         }
-
         return null;
     }
 
-    /**
-     * 生成唯一 ID
-     */
     private function generateId(): string
     {
         return sprintf(
@@ -436,15 +371,5 @@ PROMPT;
             date('Ymd-His'),
             bin2hex(random_bytes(4))
         );
-    }
-
-    /**
-     * 日志记录
-     */
-    private function log(string $level, string $message, array $context = []): void
-    {
-        if ($this->logger !== null) {
-            $this->logger->$level("[Supervisor] {$message}", $context);
-        }
     }
 }
