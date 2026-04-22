@@ -503,3 +503,119 @@ if (!function_exists('ai_validate_media_file')) {
         return in_array($extension, $allowedExtensions, true);
     }
 }
+
+if (!function_exists('ai_hub')) {
+    /**
+     * 获取 Agent Hub 实例（单 Key 多 Agent）
+     *
+     * @param string|null $apiKey API Key（可选，使用环境变量 OPENAI_API_KEY）
+     * @param array $config 配置
+     * @return \Kode\AiAgent\Agent\AgentHub
+     *
+     * @example
+     * ```php
+     * $hub = ai_hub('sk-api-key');
+     *
+     * // 使用编剧
+     * $hub->writer()->chat('写一个剧本');
+     *
+     * // 使用画师
+     * $hub->artist()->chat('生成一幅画');
+     *
+     * // 并行任务
+     * $hub->parallel([
+     *     ['agent' => 'writer', 'message' => '写第一幕'],
+     *     ['agent' => 'writer', 'message' => '写第二幕'],
+     * ]);
+     * ```
+     */
+    function ai_hub(?string $apiKey = null, array $config = []): \Kode\AiAgent\Agent\AgentHub
+    {
+        $key = $apiKey ?? getenv('OPENAI_API_KEY') ?: '';
+        return \Kode\AiAgent\Agent\AgentHub::create($key, $config);
+    }
+}
+
+if (!function_exists('ai_script_generator')) {
+    /**
+     * 获取剧本生成器实例
+     *
+     * @param \Kode\AiAgent\Domain\Contract\AdapterInterface|null $adapter 适配器
+     * @param array $defaultOptions 默认选项
+     * @return \Kode\AiAgent\Agent\ScriptGenerator
+     *
+     * @example
+     * ```php
+     * $generator = ai_script_generator($adapter);
+     * $script = $generator->generate('友情主题', ['scenes' => 5]);
+     * $parsed = $generator->parse($script);
+     * ```
+     */
+    function ai_script_generator(
+        ?\Kode\AiAgent\Domain\Contract\AdapterInterface $adapter = null,
+        array $defaultOptions = []
+    ): \Kode\AiAgent\Agent\ScriptGenerator {
+        if ($adapter === null) {
+            $hub = ai_hub();
+            $adapter = $hub->adapter();
+        }
+        return new \Kode\AiAgent\Agent\ScriptGenerator($adapter, $defaultOptions);
+    }
+}
+
+if (!function_exists('ai_single_key_multimodal')) {
+    /**
+     * 单 Key 多模态生成（快捷方法）
+     *
+     * @param string $type 类型 (image|video|avatar)
+     * @param string $prompt 提示词
+     * @param array $options 选项
+     * @return mixed
+     *
+     * @example
+     * ```php
+     * // 生成图像
+     * ai_single_key_multimodal('image', '一只可爱的猫咪');
+     *
+     * // 生成视频
+     * ai_single_key_multimodal('video', '风景视频');
+     * ```
+     */
+    function ai_single_key_multimodal(string $type, string $prompt, array $options = []): mixed
+    {
+        $hub = ai_hub();
+
+        return match ($type) {
+            'image' => $hub->image($prompt, $options),
+            'video' => $hub->video($prompt, $options),
+            'script' => $hub->script($prompt, $options),
+            'drama' => $hub->shortDrama($prompt, $options),
+            default => throw new \InvalidArgumentException("未知类型: {$type}"),
+        };
+    }
+}
+
+if (!function_exists('ai_collaborate')) {
+    /**
+     * 多 Agent 协作（快捷方法）
+     *
+     * @param callable $callback 回调函数，接收 $team 和 $hub
+     * @param string|null $apiKey API Key
+     * @param array $config 配置
+     * @return array
+     *
+     * @example
+     * ```php
+     * $result = ai_collaborate(function($team, $hub) {
+     *     $team->assign('编剧', $hub->writer());
+     *     $team->assign('画师', $hub->artist());
+     *     return $team->run('制作短剧', [...]);
+     * });
+     * ```
+     */
+    function ai_collaborate(callable $callback, ?string $apiKey = null, array $config = []): array
+    {
+        $hub = ai_hub($apiKey, $config);
+        return $hub->team($callback);
+    }
+}
