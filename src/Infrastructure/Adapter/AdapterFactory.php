@@ -47,6 +47,9 @@ final class AdapterFactory
         'xunfei' => XunfeiAdapter::class,
         'spark' => XunfeiAdapter::class,
         'xinghuo' => XunfeiAdapter::class,
+        'seedance' => SeedanceAdapter::class,
+        'seedance2' => SeedanceAdapter::class,
+        'bytedance' => SeedanceAdapter::class,
     ];
 
     /**
@@ -142,6 +145,14 @@ final class AdapterFactory
             'api_key' => $apiKey,
             'api_secret' => $apiSecret,
         ]));
+    }
+
+    /**
+     * 快速创建 Seedance 2.0 视频适配器
+     */
+    public static function seedance(string $apiKey, array $config = []): AdapterInterface
+    {
+        return self::create('seedance', array_merge($config, ['api_key' => $apiKey]));
     }
 
     /**
