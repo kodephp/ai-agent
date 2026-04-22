@@ -371,6 +371,100 @@ if (!function_exists('ai_format_file_size')) {
     }
 }
 
+if (!function_exists('ai_drama_team')) {
+    /**
+     * 获取短剧团队实例（快速方法）
+     *
+     * @param string|array $apiKey API Key
+     * @param array $config 配置
+     * @return \Kode\AiAgent\Agent\ShortDramaTeam
+     *
+     * @example
+     * ```php
+     * $team = ai_drama_team('sk-api-key');
+     * $result = $team->generate('友情主题短剧');
+     * ```
+     */
+    function ai_drama_team(string|array $apiKey, array $config = []): \Kode\AiAgent\Agent\ShortDramaTeam
+    {
+        return new \Kode\AiAgent\Agent\ShortDramaTeam($apiKey, $config);
+    }
+}
+
+if (!function_exists('ai_generate_drama')) {
+    /**
+     * 一键生成短剧（快速方法）
+     *
+     * @param string $topic 主题
+     * @param array $options 选项
+     * @return array 生成结果
+     *
+     * @example
+     * ```php
+     * $result = ai_generate_drama('友情主题', [
+     *     'scenes' => 5,
+     *     'style' => 'cinematic',
+     * ]);
+     * echo $result['final_video'];
+     * ```
+     */
+    function ai_generate_drama(string $topic, array $options = []): array
+    {
+        $team = ai_drama_team(
+            $options['api_key'] ?? getenv('OPENAI_API_KEY') ?: '',
+            $options
+        );
+
+        if (isset($options['callback'])) {
+            foreach ($options['callback'] as $event => $handler) {
+                $team->on($event, $handler);
+            }
+        }
+
+        return $team->generate($topic, $options);
+    }
+}
+
+if (!function_exists('ai_agent_team')) {
+    /**
+     * 获取 Agent 团队实例（快速方法）
+     *
+     * @return \Kode\AiAgent\Agent\RoleAgentTeam
+     *
+     * @example
+     * ```php
+     * $team = ai_agent_team();
+     * $team->assign('编剧', $writerAgent);
+     * $team->assign('画师', $artistAgent);
+     * $team->run('制作短剧', [...]);
+     * ```
+     */
+    function ai_agent_team(): \Kode\AiAgent\Agent\RoleAgentTeam
+    {
+        return new \Kode\AiAgent\Agent\RoleAgentTeam();
+    }
+}
+
+if (!function_exists('ai_supervisor')) {
+    /**
+     * 获取主管 Agent 实例（快速方法）
+     *
+     * @param \Kode\AiAgent\Agent\Agent|null $supervisor 主管 Agent
+     * @return \Kode\AiAgent\Agent\SupervisorAgent
+     *
+     * @example
+     * ```php
+     * $supervisor = ai_supervisor($chiefAgent);
+     * $supervisor->register('executor', $executorAgent);
+     * $result = $supervisor->supervise('完成项目', [...]);
+     * ```
+     */
+    function ai_supervisor(?\Kode\AiAgent\Agent\Agent $supervisor = null): \Kode\AiAgent\Agent\SupervisorAgent
+    {
+        return new \Kode\AiAgent\Agent\SupervisorAgent($supervisor);
+    }
+}
+
 if (!function_exists('ai_validate_media_file')) {
     /**
      * 验证媒体文件
