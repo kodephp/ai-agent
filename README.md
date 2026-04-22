@@ -2,7 +2,7 @@
 
 企业级 PHP AI Agent 框架，兼容 Symfony AI 生态，支持多 Agent 协作、短剧生成、多模态（文生图/视频）、Fiber 协程、进程管理。
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg)](https://php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## 特性
@@ -1521,7 +1521,7 @@ src/
 
 ## 环境要求
 
-- PHP 8.1+
+- PHP 8.2+
 - Composer 2.0+
 
 ## 许可证
