@@ -824,3 +824,119 @@ $watermarked = $composer->addWatermark(
     ]
 );
 ```
+
+---
+
+## 14. Seedance 2.0 视频生成
+
+### 14.1 SeedanceService 直接调用
+
+SeedanceService 提供直接的 Seedance 2.0 API 调用，无需通过 Agent 代理。
+
+```php
+use Kode\AiAgent\Video\SeedanceService;
+
+// 创建服务
+$service = new SeedanceService('your-api-key', [
+    'resolution' => '720p',  // 默认 720p，可选 1080p
+    'duration' => 10,
+    'aspect_ratio' => '16:9',
+    'timeout' => 120,
+]);
+```
+
+### 14.2 文生视频
+
+```php
+// 720P 高清（默认）
+$video = $service->textToVideo('一只可爱的猫咪在草地上玩耍');
+
+// 1080P 全高清
+$video = $service->textToVideo('一只可爱的猫咪在草地上玩耍', [
+    'resolution' => '1080p',
+]);
+
+// 纵向视频（抖音/快手）
+$video = $service->textToVideo('舞蹈表演', [
+    'aspect_ratio' => '9:16',
+    'duration' => 10,
+]);
+```
+
+### 14.3 图生视频
+
+```php
+// 从 URL 生成
+$video = $service->imageToVideo('https://example.com/image.jpg');
+
+// 从本地文件生成
+$video = $service->imageToVideo('/path/to/image.jpg', '让场景动起来');
+
+// 1080P 纵向
+$video = $service->imageToVideo('photo.jpg', null, [
+    'resolution' => '1080p',
+    'aspect_ratio' => '9:16',
+]);
+```
+
+### 14.4 多镜头视频
+
+```php
+// 生成 3 个镜头
+$video = $service->multiShot('日出风景', 3);
+
+// 生成 5 个镜头，1080P
+$video = $service->multiShot('海边日落', 5, [
+    'resolution' => '1080p',
+]);
+```
+
+### 14.5 任务状态查询
+
+```php
+// 获取任务状态
+$status = $service->getStatus('task-id-xxx');
+
+if ($status['status'] === 'completed') {
+    echo "视频已生成: " . $status['video_url'];
+}
+
+// 等待完成
+$video = $service->waitForCompletion('task-id-xxx', 120, 3);
+```
+
+### 14.6 快捷函数
+
+```php
+// 快速生成视频
+$video = ai_video('一只猫咪');
+
+// 1080P
+$video = ai_video('一只猫咪', ['resolution' => '1080p']);
+
+// 图生视频
+$video = ai_image_to_video('photo.jpg', '让照片动起来');
+
+// 获取服务实例
+$service = ai_seedance('api-key');
+```
+
+### 14.7 支持的参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| resolution | string | 720p | 分辨率：720p / 1080p |
+| duration | int | 10 | 时长（秒） |
+| aspect_ratio | string | 16:9 | 画幅比例 |
+| fps | int | 30 | 帧率 |
+
+### 14.8 支持的画幅比例
+
+| 比例 | 尺寸 | 用途 |
+|------|------|------|
+| 16:9 | 1920x1080 | 横向视频 |
+| 9:16 | 1080x1920 | 纵向视频（抖音/快手） |
+| 1:1 | 1080x1080 | 方形视频 |
+| 4:3 | 1440x1080 | 经典比例 |
+| 3:4 | 1080x1440 | 纵向4:3 |
+| 21:9 | 2560x1080 | 宽屏 |

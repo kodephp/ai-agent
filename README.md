@@ -2,7 +2,7 @@
 
 企业级 PHP AI Agent 框架，兼容 Symfony AI 生态，支持多 Agent 协作、短剧生成、多模态（文生图/视频）、Fiber 协程、进程管理。
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg)](https://php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## 特性
@@ -796,6 +796,37 @@ $response = Multimodal::imageToVideo(
 echo $response->video();
 ```
 
+#### Seedance 2.0 视频生成
+
+SeedanceService 提供直接的字节跳动 Seedance 2.0 API 调用：
+
+```php
+use Kode\AiAgent\Video\SeedanceService;
+
+// 创建服务
+$service = new SeedanceService('your-api-key', [
+    'resolution' => '720p',  // 默认 720p，可选 1080p
+    'duration' => 10,
+    'aspect_ratio' => '16:9',
+]);
+
+// 文生视频
+$video = $service->textToVideo('一只可爱的猫咪');
+
+// 1080P
+$video = $service->textToVideo('一只可爱的猫咪', ['resolution' => '1080p']);
+
+// 图生视频
+$video = $service->imageToVideo('/path/to/image.jpg', '让猫咪动起来');
+
+// 多镜头视频
+$video = $service->multiShot('日出风景', 3);
+
+// 快捷函数
+$video = ai_video('一只猫咪');
+$video = ai_video('一只猫咪', ['resolution' => '1080p']);
+```
+
 #### 获取平台能力
 
 ```php
@@ -1490,7 +1521,7 @@ src/
 
 ## 环境要求
 
-- PHP 8.2+
+- PHP 8.1+
 - Composer 2.0+
 
 ## 许可证
