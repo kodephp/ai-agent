@@ -3,7 +3,7 @@
     "description": "企业级 PHP AI Agent 框架，兼容 Symfony AI 生态。支持短剧生成（多 Agent 协作）、多模态（文生图/视频/数字人）、Monolog 日志、Fiber 协程、进程管理、AI 字幕、配音旁白、视频剪辑、工作流预设等企业级功能。",
     "type": "library",
     "license": "Apache-2.0",
-    "version": "2.7.0",
+    "version": "2.8.0",
     "autoload": {
         "psr-4": {
             "Kode\\AiAgent\\": "src/"

@@ -12,74 +12,15 @@ use Psr\Log\NullLogger;
 
 class RoleAgentTeam implements AgentTeamInterface
 {
-    private array $agents = [];
+    use AgentTeamTrait;
+
     private array $routes = [];
     private array $hooks = [];
-    private ?CostTracker $costTracker = null;
-    private LoggerInterface $logger;
     private array $context = [];
 
     public function __construct(?LoggerInterface $logger = null)
     {
-        $this->logger = $logger ?? new NullLogger();
-    }
-
-    public function assign(string $role, Agent $agent): self
-    {
-        $this->agents[$role] = $agent;
-        $this->logger->debug("Agent 角色已分配", ['role' => $role]);
-        return $this;
-    }
-
-    public function has(string $role): bool
-    {
-        return isset($this->agents[$role]);
-    }
-
-    public function roles(): array
-    {
-        return array_keys($this->agents);
-    }
-
-    public function agent(string $role): Agent
-    {
-        return $this->agents[$role] ?? throw ConfigurationException::unsupportedPlatform($role);
-    }
-
-    public function dispatch(string $role, string $task, array $options = []): ResponseInterface
-    {
-        $this->logger->info("Agent 分发开始", [
-            'role' => $role,
-            'task_length' => strlen($task),
-        ]);
-
-        $startTime = microtime(true);
-
-        try {
-            $this->fireHook('before', $role, $task, $options);
-
-            $response = $this->agent($role)->chat($task, $options);
-
-            $duration = microtime(true) - $startTime;
-            $this->fireHook('after', $role, $task, $response);
-
-            $this->trackCost($role, $response);
-
-            $this->logger->info("Agent 分发完成", [
-                'role' => $role,
-                'duration' => round($duration, 3),
-                'content_length' => strlen($response->content()),
-            ]);
-
-            return $response;
-        } catch (\Throwable $e) {
-            $this->logger->error("Agent 分发失败", [
-                'role' => $role,
-                'error' => $e->getMessage(),
-            ]);
-            $this->fireHook('error', $role, $task, $e);
-            throw $e;
-        }
+        $this->initTeamTrait($logger, '执行员');
     }
 
     public function route(string $pattern, string $role): self
@@ -107,13 +48,13 @@ class RoleAgentTeam implements AgentTeamInterface
 
     public function auto(string $task, array $options = []): ResponseInterface
     {
-        $role = $this->resolveRole($task);
+        $role = $this->resolveRoleWithRoute($task);
         return $this->dispatch($role, $task, $options);
     }
 
     public function run(string $goal, array $workflow, array $options = []): array
     {
-        $this->logger->info("工作流开始", [
+        $this->log('info', '工作流开始', [
             'goal' => $goal,
             'steps' => count($workflow),
         ]);
@@ -134,9 +75,7 @@ class RoleAgentTeam implements AgentTeamInterface
             }
 
             $stepStartTime = microtime(true);
-
             $response = $this->dispatch($role, $task, $options);
-
             $stepDuration = microtime(true) - $stepStartTime;
 
             $output = [
@@ -149,7 +88,6 @@ class RoleAgentTeam implements AgentTeamInterface
             ];
 
             $outputs[] = $output;
-
             $workflowContext["output_{$role}"] = $response->content();
             $workflowContext["result_step_{$index}"] = $output;
         }
@@ -157,7 +95,7 @@ class RoleAgentTeam implements AgentTeamInterface
         $workflowContext['completed_at'] = date('Y-m-d H:i:s');
         $workflowContext['total_duration'] = array_sum(array_column($outputs, 'duration'));
 
-        $this->logger->info("工作流完成", [
+        $this->log('info', '工作流完成', [
             'goal' => $goal,
             'steps' => count($outputs),
             'total_duration' => round($workflowContext['total_duration'], 3),
@@ -172,7 +110,7 @@ class RoleAgentTeam implements AgentTeamInterface
 
     public function parallel(array $tasks, array $options = []): array
     {
-        $this->logger->info("并行任务开始", ['count' => count($tasks)]);
+        $this->log('info', '并行任务开始', ['count' => count($tasks)]);
 
         $promises = [];
         $startTime = microtime(true);
@@ -186,12 +124,11 @@ class RoleAgentTeam implements AgentTeamInterface
                 $role = $this->resolveRole($message);
             }
 
-            $promise = $this->dispatchAsync($role, $message, $taskOptions);
             $promises[] = [
                 'index' => $index,
                 'role' => $role,
                 'message' => $message,
-                'promise' => $promise,
+                'promise' => $this->dispatch($role, $message, $taskOptions),
             ];
         }
 
@@ -206,7 +143,7 @@ class RoleAgentTeam implements AgentTeamInterface
 
         $duration = microtime(true) - $startTime;
 
-        $this->logger->info("并行任务完成", [
+        $this->log('info', '并行任务完成', [
             'count' => count($results),
             'duration' => round($duration, 3),
         ]);
@@ -260,9 +197,6 @@ class RoleAgentTeam implements AgentTeamInterface
 
     public function getCostReport(): array
     {
-        if ($this->costTracker === null) {
-            return [];
-        }
         return $this->costTracker->summary();
     }
 
@@ -275,7 +209,7 @@ class RoleAgentTeam implements AgentTeamInterface
         return $this;
     }
 
-    private function resolveRole(string $task): string
+    private function resolveRoleWithRoute(string $task): string
     {
         $normalizedTask = mb_strtolower($task);
 
@@ -288,16 +222,7 @@ class RoleAgentTeam implements AgentTeamInterface
             }
         }
 
-        if ($this->has('执行员')) {
-            return '执行员';
-        }
-
-        $roles = $this->roles();
-        if (empty($roles)) {
-            throw ConfigurationException::missing('team.roles');
-        }
-
-        return $roles[0];
+        return $this->resolveRole($task);
     }
 
     private function fireHook(string $event, string $role, mixed ...$args): void
@@ -310,34 +235,12 @@ class RoleAgentTeam implements AgentTeamInterface
             try {
                 $hook($role, ...$args);
             } catch (\Throwable $e) {
-                $this->logger->warning("Hook 执行失败", [
+                $this->logger->warning('Hook 执行失败', [
                     'event' => $event,
                     'role' => $role,
                     'error' => $e->getMessage(),
                 ]);
             }
         }
-    }
-
-    private function trackCost(string $role, ResponseInterface $response): void
-    {
-        if ($this->costTracker === null) {
-            return;
-        }
-
-        $usage = $response->usage();
-        if (!empty($usage)) {
-            $this->costTracker->track(
-                $role,
-                $usage['prompt_tokens'] ?? 0,
-                $usage['completion_tokens'] ?? 0,
-                $usage['total_tokens'] ?? 0
-            );
-        }
-    }
-
-    private function dispatchAsync(string $role, string $task, array $options = []): ResponseInterface
-    {
-        return $this->dispatch($role, $task, $options);
     }
 }
