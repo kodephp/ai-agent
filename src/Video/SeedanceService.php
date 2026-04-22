@@ -23,19 +23,22 @@ use Kode\AiAgent\Log\LogManager;
  * // 文生视频 (默认 720P)
  * $result = $service->textToVideo('一只猫咪在草地上玩耍');
  *
- * // 文生视频 (1080P)
- * $result = $service->textToVideo('一只猫咪在草地上玩耍', [
- *     'resolution' => '1080p',
+ * // 批量生成
+ * $results = $service->batchTextToVideo([
+ *     '一只可爱的猫咪',
+ *     '日出风景',
+ *     '海浪拍岸',
  * ]);
  *
- * // 图生视频
- * $result = $service->imageToVideo('/path/to/image.jpg', '让猫咪动起来');
- *
- * // 多镜头视频
- * $result = $service->multiShot('日出风景', 3);
+ * // 并发生成
+ * $results = $service->parallelTextToVideo([
+ *     '猫咪在玩耍',
+ *     '狗狗在奔跑',
+ *     '鸟儿在飞翔',
+ * ], concurrency: 3);
  * ```
  */
-class SeedanceService
+final class SeedanceService
 {
     private SeedanceAdapter $adapter;
     private array $defaultOptions;
@@ -66,36 +69,6 @@ class SeedanceService
         return new self($apiKey, $options);
     }
 
-    /**
-     * 文生视频
-     *
-     * @param string $prompt 提示词
-     * @param array{
-     *     resolution?: '720p'|'1080p',
-     *     duration?: int,
-     *     aspect_ratio?: string,
-     *     fps?: int,
-     *     negative_prompt?: string,
-     *     seed?: int,
-     * } $options 选项
-     * @return VideoResponse 视频响应
-     *
-     * @example
-     * ```php
-     * // 720P 高清
-     * $video = $service->textToVideo('一只可爱的猫咪');
-     *
-     * // 1080P 全高清
-     * $video = $service->textToVideo('一只可爱的猫咪', [
-     *     'resolution' => '1080p',
-     * ]);
-     *
-     * // 纵向视频
-     * $video = $service->textToVideo('舞蹈表演', [
-     *     'aspect_ratio' => '9:16',
-     * ]);
-     * ```
-     */
     public function textToVideo(string $prompt, array $options = []): VideoResponse
     {
         $this->logger?->info('文生视频开始', [
@@ -122,34 +95,6 @@ class SeedanceService
         }
     }
 
-    /**
-     * 图生视频
-     *
-     * @param string $image 图像 (URL 或本地路径)
-     * @param string|null $prompt 提示词 (可选)
-     * @param array{
-     *     resolution?: '720p'|'1080p',
-     *     duration?: int,
-     *     aspect_ratio?: string,
-     *     fps?: int,
-     * } $options 选项
-     * @return VideoResponse 视频响应
-     *
-     * @example
-     * ```php
-     * // 从 URL 生成
-     * $video = $service->imageToVideo('https://example.com/image.jpg');
-     *
-     * // 从本地文件生成
-     * $video = $service->imageToVideo('/path/to/image.jpg', '让场景动起来');
-     *
-     * // 1080P 纵向视频
-     * $video = $service->imageToVideo('image.jpg', null, [
-     *     'resolution' => '1080p',
-     *     'aspect_ratio' => '9:16',
-     * ]);
-     * ```
-     */
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {
         $this->logger?->info('图生视频开始', [
@@ -177,29 +122,6 @@ class SeedanceService
         }
     }
 
-    /**
-     * 多镜头视频
-     *
-     * @param string $prompt 提示词
-     * @param int $shots 镜头数量 (2-6)
-     * @param array{
-     *     resolution?: '720p'|'1080p',
-     *     duration?: int,
-     *     aspect_ratio?: string,
-     * } $options 选项
-     * @return VideoResponse 视频响应
-     *
-     * @example
-     * ```php
-     * // 生成 3 个镜头
-     * $video = $service->multiShot('日出风景', 3);
-     *
-     * // 生成 5 个镜头，1080P
-     * $video = $service->multiShot('海边日落', 5, [
-     *     'resolution' => '1080p',
-     * ]);
-     * ```
-     */
     public function multiShot(string $prompt, int $shots = 3, array $options = []): VideoResponse
     {
         $this->logger?->info('多镜头视频开始', [
@@ -227,38 +149,121 @@ class SeedanceService
         }
     }
 
-    /**
-     * 获取任务状态
-     *
-     * @param string $taskId 任务 ID
-     * @return array 任务状态
-     *
-     * @example
-     * ```php
-     * $status = $service->getStatus('task-xxx-123');
-     * if ($status['status'] === 'completed') {
-     *     echo "视频已生成: " . $status['video_url'];
-     * }
-     * ```
-     */
+    public function batchTextToVideo(array $prompts, array $options = []): array
+    {
+        $this->logger?->info('批量文生视频开始', [
+            'count' => count($prompts),
+        ]);
+
+        $results = [];
+        foreach ($prompts as $index => $prompt) {
+            try {
+                $results[$index] = [
+                    'success' => true,
+                    'prompt' => $prompt,
+                    'response' => $this->textToVideo($prompt, $options),
+                ];
+            } catch (\Throwable $e) {
+                $results[$index] = [
+                    'success' => false,
+                    'prompt' => $prompt,
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        $successCount = count(array_filter($results, fn($r) => $r['success']));
+        $this->logger?->info('批量文生视频完成', [
+            'total' => count($prompts),
+            'success' => $successCount,
+            'failed' => count($prompts) - $successCount,
+        ]);
+
+        return $results;
+    }
+
+    public function parallelTextToVideo(array $prompts, array $options = [], int $concurrency = 3): array
+    {
+        $this->logger?->info('并发文生视频开始', [
+            'count' => count($prompts),
+            'concurrency' => $concurrency,
+        ]);
+
+        $results = [];
+        $chunks = array_chunk($prompts, $concurrency);
+
+        foreach ($chunks as $chunkIndex => $chunk) {
+            foreach ($chunk as $index => $prompt) {
+                $actualIndex = $chunkIndex * $concurrency + $index;
+                try {
+                    $results[$actualIndex] = [
+                        'success' => true,
+                        'prompt' => $prompt,
+                        'response' => $this->textToVideo($prompt, $options),
+                    ];
+                } catch (\Throwable $e) {
+                    $results[$actualIndex] = [
+                        'success' => false,
+                        'prompt' => $prompt,
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+        }
+
+        $successCount = count(array_filter($results, fn($r) => $r['success']));
+        $this->logger?->info('并发文生视频完成', [
+            'total' => count($prompts),
+            'success' => $successCount,
+            'failed' => count($prompts) - $successCount,
+        ]);
+
+        return $results;
+    }
+
+    public function batchImageToVideo(array $images, array $options = []): array
+    {
+        $this->logger?->info('批量图生视频开始', [
+            'count' => count($images),
+        ]);
+
+        $results = [];
+        foreach ($images as $index => $item) {
+            $image = is_array($item) ? ($item['image'] ?? $item[0] ?? '') : $item;
+            $prompt = is_array($item) ? ($item['prompt'] ?? $item[1] ?? null) : null;
+
+            try {
+                $results[$index] = [
+                    'success' => true,
+                    'image' => $image,
+                    'prompt' => $prompt,
+                    'response' => $this->imageToVideo($image, $prompt, $options),
+                ];
+            } catch (\Throwable $e) {
+                $results[$index] = [
+                    'success' => false,
+                    'image' => $image,
+                    'prompt' => $prompt,
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        $successCount = count(array_filter($results, fn($r) => $r['success']));
+        $this->logger?->info('批量图生视频完成', [
+            'total' => count($images),
+            'success' => $successCount,
+            'failed' => count($images) - $successCount,
+        ]);
+
+        return $results;
+    }
+
     public function getStatus(string $taskId): array
     {
         return $this->adapter->getTaskStatus($taskId);
     }
 
-    /**
-     * 等待任务完成
-     *
-     * @param string $taskId 任务 ID
-     * @param int $timeout 超时时间 (秒)
-     * @param int $interval 轮询间隔 (秒)
-     * @return VideoResponse 视频响应
-     *
-     * @example
-     * ```php
-     * $video = $service->waitForCompletion('task-xxx-123', 120, 3);
-     * ```
-     */
     public function waitForCompletion(string $taskId, int $timeout = 120, int $interval = 3): VideoResponse
     {
         $startTime = time();
@@ -283,44 +288,37 @@ class SeedanceService
         throw new \RuntimeException('视频生成超时');
     }
 
-    /**
-     * 设置默认分辨率
-     *
-     * @param string $resolution '720p' 或 '1080p'
-     * @return self
-     */
     public function setResolution(string $resolution): self
     {
         $this->defaultOptions['resolution'] = $resolution;
         return $this;
     }
 
-    /**
-     * 设置默认画幅比例
-     *
-     * @param string $aspectRatio 画幅比例
-     * @return self
-     */
     public function setAspectRatio(string $aspectRatio): self
     {
         $this->defaultOptions['aspect_ratio'] = $aspectRatio;
         return $this;
     }
 
-    /**
-     * 获取支持的分辨率
-     */
+    public function setDuration(int $duration): self
+    {
+        $this->defaultOptions['duration'] = $duration;
+        return $this;
+    }
+
     public function getSupportedResolutions(): array
     {
         return SeedanceAdapter::SUPPORTED_RESOLUTIONS;
     }
 
-    /**
-     * 获取支持的画幅比例
-     */
     public function getSupportedAspectRatios(): array
     {
         return array_keys(SeedanceAdapter::ASPECT_RATIOS);
+    }
+
+    public function getAdapter(): SeedanceAdapter
+    {
+        return $this->adapter;
     }
 
     private function mergeOptions(array $options): array
@@ -329,9 +327,6 @@ class SeedanceService
     }
 }
 
-/**
- * 判断是否为 URL
- */
 function is_url(string $value): bool
 {
     return filter_var($value, FILTER_VALIDATE_URL) !== false;

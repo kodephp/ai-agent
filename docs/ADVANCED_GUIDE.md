@@ -921,7 +921,41 @@ $video = ai_image_to_video('photo.jpg', '让照片动起来');
 $service = ai_seedance('api-key');
 ```
 
-### 14.7 支持的参数
+### 14.7 批量处理
+
+```php
+// 批量文生视频
+$results = $service->batchTextToVideo([
+    '一只可爱的猫咪',
+    '日出风景',
+    '海浪拍岸',
+]);
+
+// 遍历结果
+foreach ($results as $index => $result) {
+    if ($result['success']) {
+        echo "视频 {$index}: " . $result['response']->firstVideo() . "\n";
+    } else {
+        echo "视频 {$index} 失败: " . $result['error'] . "\n";
+    }
+}
+
+// 并发生成（控制并发数）
+$results = $service->parallelTextToVideo([
+    '猫咪在玩耍',
+    '狗狗在奔跑',
+    '鸟儿在飞翔',
+], options: ['resolution' => '1080p'], concurrency: 3);
+
+// 批量图生视频
+$results = $service->batchImageToVideo([
+    ['image' => 'photo1.jpg', 'prompt' => '让猫咪动起来'],
+    ['image' => 'photo2.jpg'],  // 无提示词
+    'photo3.jpg',  // 简单格式
+]);
+```
+
+### 14.8 支持的参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
