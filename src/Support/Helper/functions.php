@@ -619,3 +619,83 @@ if (!function_exists('ai_collaborate')) {
         return $hub->team($callback);
     }
 }
+
+if (!function_exists('ai_seedance')) {
+    /**
+     * 获取 Seedance 视频服务
+     *
+     * @param string|null $apiKey API Key（可选，使用环境变量 SEEDANCE_API_KEY）
+     * @param array $options 配置
+     * @return \Kode\AiAgent\Video\SeedanceService
+     *
+     * @example
+     * ```php
+     * $service = ai_seedance('your-api-key');
+     *
+     * // 文生视频 (默认 720P)
+     * $video = $service->textToVideo('一只可爱的猫咪');
+     *
+     * // 文生视频 (1080P)
+     * $video = $service->textToVideo('一只可爱的猫咪', [
+     *     'resolution' => '1080p',
+     * ]);
+     *
+     * // 图生视频
+     * $video = $service->imageToVideo('image.jpg', '让猫咪动起来');
+     *
+     * // 多镜头
+     * $video = $service->multiShot('风景', 3);
+     * ```
+     */
+    function ai_seedance(?string $apiKey = null, array $options = []): \Kode\AiAgent\Video\SeedanceService
+    {
+        $key = $apiKey ?? getenv('SEEDANCE_API_KEY') ?: getenv('OPENAI_API_KEY') ?: '';
+        return \Kode\AiAgent\Video\SeedanceService::create($key, $options);
+    }
+}
+
+if (!function_exists('ai_video')) {
+    /**
+     * 快速生成视频（快捷方法）
+     *
+     * @param string $prompt 提示词
+     * @param array $options 选项
+     * @return \Kode\AiAgent\Domain\Model\VideoResponse
+     *
+     * @example
+     * ```php
+     * // 720P 视频
+     * $video = ai_video('一只猫咪在草地上玩耍');
+     *
+     * // 1080P 视频
+     * $video = ai_video('一只猫咪在草地上玩耍', ['resolution' => '1080p']);
+     *
+     * // 纵向视频
+     * $video = ai_video('舞蹈表演', ['aspect_ratio' => '9:16']);
+     * ```
+     */
+    function ai_video(string $prompt, array $options = []): \Kode\AiAgent\Domain\Model\VideoResponse
+    {
+        return ai_seedance(null, $options)->textToVideo($prompt, $options);
+    }
+}
+
+if (!function_exists('ai_image_to_video')) {
+    /**
+     * 图生视频（快捷方法）
+     *
+     * @param string $image 图像
+     * @param string|null $prompt 提示词
+     * @param array $options 选项
+     * @return \Kode\AiAgent\Domain\Model\VideoResponse
+     *
+     * @example
+     * ```php
+     * $video = ai_image_to_video('photo.jpg', '让照片动起来');
+     * ```
+     */
+    function ai_image_to_video(string $image, ?string $prompt = null, array $options = []): \Kode\AiAgent\Domain\Model\VideoResponse
+    {
+        return ai_seedance(null, $options)->imageToVideo($image, $prompt, $options);
+    }
+}

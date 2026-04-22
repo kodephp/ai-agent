@@ -17,12 +17,11 @@ use Nyholm\Psr7\Request;
  * 支持文生视频、图生视频、多镜头叙事，原生音频生成。
  *
  * 特性：
- * - 2K 分辨率
+ * - 720P / 1080P 分辨率（可配置）
  * - 最长 15 秒视频
  * - 6 种画幅比例
  * - 原生音视频联合生成
  * - 多镜头叙事
- * - 人脸支持
  *
  * @package Kode\AiAgent\Infrastructure\Adapter
  *
@@ -30,11 +29,12 @@ use Nyholm\Psr7\Request;
  * ```php
  * $adapter = SeedanceAdapter::create('your-api-key');
  *
- * // 文生视频
+ * // 文生视频 (720P 高清)
+ * $video = $adapter->generateVideo('一只猫咪在草地上玩耍');
+ *
+ * // 文生视频 (1080P 全高清)
  * $video = $adapter->generateVideo('一只猫咪在草地上玩耍', [
- *     'duration' => 10,
- *     'resolution' => '2k',
- *     'aspect_ratio' => '16:9',
+ *     'resolution' => '1080p',
  * ]);
  *
  * // 图生视频
@@ -50,8 +50,9 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
     private const DEFAULT_TIMEOUT = 120;
     private const DEFAULT_CONNECT_TIMEOUT = 10;
     private const DEFAULT_DURATION = 10;
-    private const DEFAULT_RESOLUTION = '1080p';
-    private const DEFAULT_FPS = 30;
+    private const DEFAULT_RESOLUTION = '720p';
+
+    public const SUPPORTED_RESOLUTIONS = ['720p', '1080p'];
 
     public const ASPECT_RATIOS = [
         '16:9' => [1920, 1080],
@@ -157,6 +158,8 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         $options = $this->normalizeOptions($options);
         $startTime = microtime(true);
 
+        $resolution = $this->resolveResolution($options['resolution'] ?? self::DEFAULT_RESOLUTION);
+
         $body = [
             'model' => $options['model'] ?? self::DEFAULT_MODEL,
             'input' => [
@@ -164,7 +167,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
             ],
             'parameters' => [
                 'duration' => $options['duration'] ?? self::DEFAULT_DURATION,
-                'resolution' => $options['resolution'] ?? self::DEFAULT_RESOLUTION,
+                'resolution' => $resolution,
                 'fps' => $options['fps'] ?? self::DEFAULT_FPS,
                 'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
             ],
@@ -199,6 +202,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
                 'duration' => $duration,
                 'requestId' => $result['request_id'] ?? $taskId,
                 'model' => $options['model'] ?? self::DEFAULT_MODEL,
+                'resolution' => $resolution,
             ]);
         } catch (\Throwable $e) {
             throw PlatformException::connectionFailed($this->getVideoEndpoint(), $e);
@@ -213,6 +217,8 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         $options = $this->normalizeOptions($options);
         $startTime = microtime(true);
 
+        $resolution = $this->resolveResolution($options['resolution'] ?? self::DEFAULT_RESOLUTION);
+
         $input = [
             'image_url' => $this->resolveImageUrl($image),
         ];
@@ -226,7 +232,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
             'input' => $input,
             'parameters' => [
                 'duration' => $options['duration'] ?? self::DEFAULT_DURATION,
-                'resolution' => $options['resolution'] ?? self::DEFAULT_RESOLUTION,
+                'resolution' => $resolution,
                 'fps' => $options['fps'] ?? self::DEFAULT_FPS,
                 'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
             ],
@@ -253,6 +259,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
                 'duration' => $duration,
                 'requestId' => $result['request_id'] ?? $taskId,
                 'model' => $options['model'] ?? self::DEFAULT_MODEL,
+                'resolution' => $resolution,
             ]);
         } catch (\Throwable $e) {
             throw PlatformException::connectionFailed($this->getVideoEndpoint(), $e);
@@ -278,6 +285,8 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         $options = $this->normalizeOptions($options);
         $startTime = microtime(true);
 
+        $resolution = $this->resolveResolution($options['resolution'] ?? self::DEFAULT_RESOLUTION);
+
         $body = [
             'model' => $options['model'] ?? self::DEFAULT_MODEL,
             'input' => [
@@ -285,7 +294,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
             ],
             'parameters' => [
                 'duration' => $options['duration'] ?? self::DEFAULT_DURATION,
-                'resolution' => $options['resolution'] ?? self::DEFAULT_RESOLUTION,
+                'resolution' => $resolution,
                 'fps' => $options['fps'] ?? self::DEFAULT_FPS,
                 'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
                 'multi_shot' => true,
@@ -322,6 +331,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
                 'duration' => $duration,
                 'requestId' => $result['request_id'] ?? '',
                 'model' => $options['model'] ?? self::DEFAULT_MODEL,
+                'resolution' => $resolution,
             ]);
         } catch (\Throwable $e) {
             throw PlatformException::connectionFailed($this->getVideoEndpoint(), $e);
@@ -346,6 +356,33 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         } catch (\Throwable $e) {
             throw PlatformException::connectionFailed($this->getVideoEndpoint(), $e);
         }
+    }
+
+    /**
+     * 获取默认分辨率
+     */
+    public function getDefaultResolution(): string
+    {
+        return self::DEFAULT_RESOLUTION;
+    }
+
+    /**
+     * 获取支持的分辨率列表
+     */
+    public function getSupportedResolutions(): array
+    {
+        return self::SUPPORTED_RESOLUTIONS;
+    }
+
+    private function resolveResolution(string $resolution): string
+    {
+        $resolution = strtolower($resolution);
+
+        if (!in_array($resolution, self::SUPPORTED_RESOLUTIONS, true)) {
+            return self::DEFAULT_RESOLUTION;
+        }
+
+        return $resolution;
     }
 
     private function validateConfig(): void
@@ -390,13 +427,6 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
 
     private function normalizeOptions(array $options): array
     {
-        $resolution = strtolower($options['resolution'] ?? self::DEFAULT_RESOLUTION);
-        if (!in_array($resolution, ['480p', '720p', '1080p', '2k'])) {
-            $resolution = self::DEFAULT_RESOLUTION;
-        }
-
-        $options['resolution'] = $resolution;
-
         $aspectRatio = $options['aspect_ratio'] ?? '16:9';
         if (!isset(self::ASPECT_RATIOS[$aspectRatio])) {
             $aspectRatio = '16:9';
