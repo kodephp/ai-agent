@@ -38,9 +38,9 @@ final class RoleAgentTeamTest extends TestCase
         ]);
 
         $this->assertSame('构建多模型代理编排', $result['goal']);
-        $this->assertCount(3, $result['outputs']);
-        $this->assertSame('总工', $result['outputs'][0]['role']);
-        $this->assertSame('系统设计完成', $result['outputs'][0]['content']);
+        $this->assertCount(3, $result['steps']);
+        $this->assertSame('总工', $result['steps'][0]['role']);
+        $this->assertSame('系统设计完成', $result['steps'][0]['content']);
     }
 
     public function testDispatchThrowsForUnknownRole(): void
