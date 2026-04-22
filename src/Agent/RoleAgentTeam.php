@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Agent;
 
+use Kode\AiAgent\Domain\Contract\AgentTeamInterface;
 use Kode\AiAgent\Domain\Contract\ResponseInterface;
 use Kode\AiAgent\Exception\ConfigurationException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
-class RoleAgentTeam
+class RoleAgentTeam implements AgentTeamInterface
 {
     private array $agents = [];
     private array $routes = [];
@@ -262,7 +263,7 @@ class RoleAgentTeam
         if ($this->costTracker === null) {
             return [];
         }
-        return $this->costTracker->getReport();
+        return $this->costTracker->summary();
     }
 
     public function reset(): self
@@ -324,7 +325,7 @@ class RoleAgentTeam
             return;
         }
 
-        $usage = $response->tokenUsage();
+        $usage = $response->usage();
         if (!empty($usage)) {
             $this->costTracker->track(
                 $role,
