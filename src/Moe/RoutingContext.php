@@ -21,6 +21,7 @@ final readonly class RoutingContext
      * @param int|null $maxTokens 单次最大 Token 数
      * @param float $temperature 温度参数
      * @param bool $stream 是否流式
+     * @param string $promptText 原始 Prompt 文本（用于 Token 效率分析）
      * @param array<string, mixed> $extra 额外上下文
      */
     public function __construct(
@@ -31,6 +32,7 @@ final readonly class RoutingContext
         public ?int $maxTokens = null,
         public float $temperature = 0.7,
         public bool $stream = false,
+        public string $promptText = '',
         public array $extra = [],
     ) {}
 
@@ -39,7 +41,7 @@ final readonly class RoutingContext
      *
      * @param array<string, mixed> $options
      */
-    public static function fromArray(array $options): self
+    public static function fromArray(array $options, string $promptText = ''): self
     {
         return new self(
             capability: isset($options['capability']) ? (string) $options['capability'] : null,
@@ -49,6 +51,7 @@ final readonly class RoutingContext
             maxTokens: isset($options['max_tokens']) ? (int) $options['max_tokens'] : null,
             temperature: (float) ($options['temperature'] ?? 0.7),
             stream: (bool) ($options['stream'] ?? false),
+            promptText: $promptText,
             extra: array_diff_key($options, array_flip([
                 'capability', 'preferred_platform', 'preferred_model',
                 'max_cost', 'max_tokens', 'temperature', 'stream',
@@ -71,8 +74,9 @@ final readonly class RoutingContext
             'max_tokens' => $this->maxTokens,
             'temperature' => $this->temperature,
             'stream' => $this->stream,
+            'prompt_text' => $this->promptText,
         ];
 
-        return array_filter($result, static fn($v) => $v !== null) + ['extra' => $this->extra];
+        return array_filter($result, static fn($v) => $v !== null && $v !== '') + ['extra' => $this->extra];
     }
 }

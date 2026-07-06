@@ -36,6 +36,7 @@ final class MoEBuilder
     private ?float $perMonthCost = null;
     private ?\Psr\Log\LoggerInterface $logger = null;
     private ?\Psr\SimpleCache\CacheInterface $cache = null;
+    private bool|array $autoCompress = false;
 
     private function __construct() {}
 
@@ -136,6 +137,17 @@ final class MoEBuilder
     }
 
     /**
+     * 启用自动压缩
+     *
+     * @param bool|array<string, mixed> $config true/false 或配置数组
+     */
+    public function autoCompress(bool|array $config = true): self
+    {
+        $this->autoCompress = $config;
+        return $this;
+    }
+
+    /**
      * 构建 MoEGateway
      */
     public function build(): MoEGateway
@@ -148,6 +160,7 @@ final class MoEBuilder
             ],
             strategy: $this->strategy,
             logger: $this->logger,
+            autoCompress: $this->autoCompress,
         );
 
         foreach ($this->expertConfigs as $config) {

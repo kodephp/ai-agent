@@ -7,6 +7,7 @@ namespace Kode\AiAgent\Infrastructure\Adapter;
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, ImageGeneratorInterface, PromptInterface, ResponseInterface};
 use Kode\AiAgent\Domain\Model\{ImageResponse, Response};
 use Kode\AiAgent\Exception\{AuthenticationException, ConfigurationException, PlatformException, InvalidInputException};
+use Kode\AiAgent\Support\JsonParser;
 use Kode\HttpClient\HttpClient;
 use Nyholm\Psr7\Request;
 
@@ -119,16 +120,15 @@ readonly class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterfac
         }
 
         $content = $response->getBody()->getContents();
-        $data = json_decode($content, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
+        try {
+            return JsonParser::parseArray($content);
+        } catch (\Kode\AiAgent\Exception\InvalidResponseException $e) {
             throw PlatformException::responseParseFailed(
-                'JSON 解析失败: ' . json_last_error_msg(),
+                $e->getMessage(),
                 ['raw' => substr($content, 0, 200)]
             );
         }
-
-        return $data;
     }
 
     private function createRequest(array $body): \Psr\Http\Message\RequestInterface
@@ -269,16 +269,15 @@ readonly class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterfac
         }
 
         $content = $response->getBody()->getContents();
-        $data = json_decode($content, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
+        try {
+            return JsonParser::parseArray($content);
+        } catch (\Kode\AiAgent\Exception\InvalidResponseException $e) {
             throw PlatformException::responseParseFailed(
-                'JSON 解析失败: ' . json_last_error_msg(),
+                $e->getMessage(),
                 ['raw' => substr($content, 0, 200)]
             );
         }
-
-        return $data;
     }
 
     private function buildImageRequestBody(string $prompt, array $options): array

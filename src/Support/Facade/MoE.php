@@ -34,9 +34,11 @@ use Kode\Facade\Facade;
  * ```
  *
  * @method static ResponseInterface chat(string $message, array $options = [])
+ * @method static ResponseInterface smartChat(string $message, array $options = [])
  * @method static \Generator stream(string $message, array $options = [])
  * @method static MoEGateway gateway()
  * @method static self addExpert(string $platform, string|array $apiKey, array $capabilities = ['chat'], ?string $model = null, int $priority = 100, float $weight = 1.0, array $options = [])
+ * @method static self autoCompress(bool|array $config = true)
  * @method static array report()
  * @method static void reset()
  */
@@ -63,6 +65,15 @@ final class MoE extends Facade
     public function chat(string $message, array $options = []): ResponseInterface
     {
         return self::gateway()->chat($message, $options);
+    }
+
+    /**
+     * 智能聊天（自动压缩 + Token 均衡路由）
+     */
+    #[\NoDiscard]
+    public function smartChat(string $message, array $options = []): ResponseInterface
+    {
+        return self::gateway()->smartChat($message, $options);
     }
 
     /**
@@ -113,6 +124,27 @@ final class MoE extends Facade
         array $options = [],
     ): self {
         self::gateway()->addExpert($platform, $apiKey, $capabilities, $model, $priority, $weight, $options);
+        return $this;
+    }
+
+    /**
+     * 配置自动压缩
+     */
+    public function autoCompress(bool|array $config = true): self
+    {
+        $gateway = self::gateway();
+        $middleware = new \Kode\AiAgent\Moe\AutoCompressionMiddleware(
+            threshold: is_array($config) ? (int) ($config['threshold'] ?? 1000) : 1000,
+            targetRatio: is_array($config) ? (float) ($config['target_ratio'] ?? 0.75) : 0.75,
+            minTokens: is_array($config) ? (int) ($config['min_tokens'] ?? 100) : 100,
+            enabled: is_array($config) ? (bool) ($config['enabled'] ?? true) : $config,
+        );
+
+        $reflection = new \ReflectionClass($gateway);
+        $prop = $reflection->getProperty('autoCompression');
+        $prop->setAccessible(true);
+        $prop->setValue($gateway, $middleware);
+
         return $this;
     }
 

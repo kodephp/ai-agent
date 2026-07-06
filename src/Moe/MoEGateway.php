@@ -7,6 +7,7 @@ namespace Kode\AiAgent\Moe;
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, PromptInterface, ResponseInterface};
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 use Kode\AiAgent\Moe\Contract\{ExpertInterface, RouterInterface};
+use Kode\AiAgent\Moe\Strategy\TokenBalancedStrategy;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -41,6 +42,7 @@ final class MoEGateway
 {
     private ModelRouter $router;
     private LoggerInterface $logger;
+    private AutoCompressionMiddleware $autoCompression;
 
     /**
      * @param array{
@@ -48,12 +50,20 @@ final class MoEGateway
      *     per_day_tokens?: int,
      *     per_month_cost?: float,
      * } $budgetConfig Token 预算配置
-     * @param string $strategy 路由策略：capability_aware|cost_aware|round_robin
+     * @param string $strategy 路由策略：capability_aware|cost_aware|round_robin|token_balanced
+     * @param bool|array<string, mixed> $autoCompress 自动压缩配置
+     *        true/false 或 [
+     *            'enabled' => true,
+     *            'threshold' => 1000,
+     *            'target_ratio' => 0.75,
+     *            'min_tokens' => 100,
+     *        ]
      */
     public function __construct(
         array $budgetConfig = [],
         string $strategy = 'capability_aware',
         ?LoggerInterface $logger = null,
+        bool|array $autoCompress = false,
     ) {
         $this->logger = $logger ?? new NullLogger();
 
@@ -67,10 +77,12 @@ final class MoEGateway
         $strategyInstance = match ($strategy) {
             'cost_aware' => new \Kode\AiAgent\Moe\Strategy\CostAwareStrategy($priceTable),
             'round_robin' => new \Kode\AiAgent\Moe\Strategy\RoundRobinStrategy(),
+            'token_balanced' => new TokenBalancedStrategy($priceTable),
             default => new \Kode\AiAgent\Moe\Strategy\CapabilityAwareStrategy(),
         };
 
         $this->router = new ModelRouter($strategyInstance, $this->logger, $priceTable, $budget);
+        $this->autoCompression = $this->resolveAutoCompression($autoCompress);
     }
 
     /**
@@ -153,7 +165,24 @@ final class MoEGateway
     public function chat(string $message, array $options = []): ResponseInterface
     {
         $prompt = new \Kode\AiAgent\Domain\Model\Prompt($message);
-        return $this->router->dispatch($prompt, $options);
+        return $this->dispatch($prompt, $options);
+    }
+
+    /**
+     * 智能聊天（自动压缩 + 自动路由 + 预算控制）
+     *
+     * 一键式入口，自动启用压缩、路由、统计，降低用户使用门槛，增强依赖。
+     *
+     * @param string $message 用户消息
+     * @param array<string, mixed> $options 选项
+     */
+    #[\NoDiscard]
+    public function smartChat(string $message, array $options = []): ResponseInterface
+    {
+        $options['auto_compress'] = $options['auto_compress'] ?? true;
+        $options['strategy'] = $options['strategy'] ?? 'token_balanced';
+
+        return $this->chat($message, $options);
     }
 
     /**
@@ -178,6 +207,7 @@ final class MoEGateway
     public function stream(string $message, array $options = []): \Generator
     {
         $prompt = new \Kode\AiAgent\Domain\Model\Prompt($message);
+        $prompt = $this->applyAutoCompression($prompt, $options);
         return $this->router->stream($prompt, $options);
     }
 
@@ -187,6 +217,7 @@ final class MoEGateway
     #[\NoDiscard]
     public function dispatch(PromptInterface $prompt, array $options = []): ResponseInterface
     {
+        $prompt = $this->applyAutoCompression($prompt, $options);
         return $this->router->dispatch($prompt, $options);
     }
 
@@ -272,5 +303,57 @@ final class MoEGateway
             ],
             'budget' => $this->router->budget()->remaining(),
         ];
+    }
+
+    /**
+     * 获取自动压缩中间件
+     */
+    public function autoCompression(): AutoCompressionMiddleware
+    {
+        return $this->autoCompression;
+    }
+
+    /**
+     * 解析自动压缩配置
+     */
+    private function resolveAutoCompression(bool|array $config): AutoCompressionMiddleware
+    {
+        if ($config === false) {
+            return new AutoCompressionMiddleware(enabled: false);
+        }
+
+        if ($config === true) {
+            return new AutoCompressionMiddleware();
+        }
+
+        return new AutoCompressionMiddleware(
+            threshold: (int) ($config['threshold'] ?? 1000),
+            targetRatio: (float) ($config['target_ratio'] ?? 0.75),
+            minTokens: (int) ($config['min_tokens'] ?? 100),
+            enabled: (bool) ($config['enabled'] ?? true),
+        );
+    }
+
+    /**
+     * 应用自动压缩
+     */
+    private function applyAutoCompression(PromptInterface $prompt, array $options): PromptInterface
+    {
+        $enabled = $options['auto_compress'] ?? $this->autoCompression->enabled();
+        if (!$enabled) {
+            return $prompt;
+        }
+
+        $savings = $this->autoCompression->savings($prompt);
+        if ($savings['saved'] > 0) {
+            $this->logger->info('MOE 自动压缩', [
+                'original_tokens' => $savings['original'],
+                'compressed_tokens' => $savings['compressed'],
+                'saved_tokens' => $savings['saved'],
+                'ratio' => $savings['ratio'],
+            ]);
+        }
+
+        return $this->autoCompression->compress($prompt);
     }
 }

@@ -5,6 +5,69 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.18.0] - 2026-07-06
+
+### 优化 - MOE 架构对比与 Token 消耗平衡
+
+#### 市场 MOE 架构 vs 本系统架构
+
+| 维度 | 传统 MOE（如 Mixtral、GShard） | 本系统 MOE 网关 |
+|------|------------------------------|----------------|
+| 路由粒度 | 单一模型内部，对参数/层分组 | 网关层跨模型路由 |
+| Key 管理 | 用户需为每个模型单独申请 Key | 后台管理各平台 Key，用户只感知一个网关 |
+| Token 平衡 | 依赖模型内部稀疏激活 | 基于模型效率指数、价格、预算做跨模型均衡 |
+| 适用场景 | 超大规模预训练模型 | 多平台 API 聚合、成本优化、高可用 |
+| 扩展性 | 增加专家需重新训练 | 新增平台/模型只需配置 |
+
+**结论**：本系统面向"单 Key 多模型"的企业级 API 网关场景，
+比传统模型内部 MOE 更贴合多供应商、多模型、成本敏感的实际业务需求。
+
+#### 新增模块
+
+- `Kode\AiAgent\Token\Skill\CompressionSkillInterface` - 压缩技能接口
+- `Kode\AiAgent\Token\Skill\WhitespaceNormalizeSkill` - 空白规范化技能
+- `Kode\AiAgent\Token\Skill\MarkdownStripSkill` - Markdown 精简技能
+- `Kode\AiAgent\Token\Skill\SynonymReplacementSkill` - 同义词替换技能
+- `Kode\AiAgent\Token\Skill\CourtesyRemovalSkill` - 客套话去除技能
+- `Kode\AiAgent\Token\SkillBasedCompressor` - 基于技能链的 Prompt 压缩器
+- `Kode\AiAgent\Token\ModelTokenEfficiency` - 模型 Token 效率指数
+- `Kode\AiAgent\Token\TokenBalancer` - 跨模型 Token 消耗平衡器
+- `Kode\AiAgent\Moe\AutoCompressionMiddleware` - 自动压缩中间件
+- `Kode\AiAgent\Moe\Strategy\TokenBalancedStrategy` - Token 均衡路由策略
+- `Kode\AiAgent\Support\JsonParser` - PHP 8.3+ json_validate 封装
+
+#### 新增能力
+
+- **技能化压缩**：Prompt 压缩拆分为可插拔技能，便于按需组合与扩展
+- **Token 效率归一化**：不同模型 Token 消耗按语言场景归一化，公平比较
+- **Token 均衡路由**：综合考虑能力、价格、Token 效率，自动选最省模型
+- **自动压缩**：MOE 网关可配置超过阈值自动压缩 Prompt，透明省钱
+- **一键智能聊天**：`MoE::smartChat()` / `ai_smart_chat()` 自动压缩 + 自动路由
+- **PHP 8.3 新特性**：`JsonParser` 使用 `json_validate()` 前置校验响应 JSON
+
+#### 新增辅助函数
+
+- `ai_smart_chat()` - 一键智能聊天
+- `ai_compress_savings()` - 计算压缩节省量
+- `ai_token_balance_report()` - 多模型 Token 消耗对比报告
+- `ai_recommend_model()` - 推荐最省 Token 的模型
+
+#### 测试
+
+新增测试文件：
+- `tests/SkillBasedCompressorTest.php`
+- `tests/TokenBalancerTest.php`
+- `tests/TokenBalancedStrategyTest.php`
+- `tests/AutoCompressionMiddlewareTest.php`
+- `tests/JsonParserTest.php`
+
+#### 变更
+
+- `composer.json` 版本号修正为 `2.18.0`
+- `MoEGateway` 支持 `auto_compress` 配置
+- `MoEBuilder` 支持 `autoCompress()` 链式配置
+- `RoutingContext` 新增 `prompt_text` 字段，用于 Token 效率分析
+
 ## [2.17.0] - 2026-07-06
 
 ### 新增 - MOE 混合专家架构

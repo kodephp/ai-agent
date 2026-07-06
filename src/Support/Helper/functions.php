@@ -742,9 +742,30 @@ if (!function_exists('ai_moe_chat')) {
     }
 }
 
+if (!function_exists('ai_smart_chat')) {
+    /**
+     * MOE 一键智能聊天（自动压缩 + Token 均衡路由）
+     *
+     * 最简入口：用户无需关心模型、Token、压缩，系统全自动处理。
+     *
+     * @param string $message 用户消息
+     * @param array $options 选项
+     * @return \Kode\AiAgent\Domain\Contract\ResponseInterface
+     *
+     * @example
+     * ```php
+     * $response = ai_smart_chat('帮我写一份产品需求文档');
+     * ```
+     */
+    function ai_smart_chat(string $message, array $options = []): \Kode\AiAgent\Domain\Contract\ResponseInterface
+    {
+        return \Kode\AiAgent\Support\Facade\MoE::smartChat($message, $options);
+    }
+}
+
 if (!function_exists('ai_compress_prompt')) {
     /**
-     * 压缩 Prompt，降低 Token 消耗
+     * 压缩 Prompt，降低 Token 消耗（基于技能链）
      *
      * @param string $prompt 原始 Prompt
      * @param int|null $maxTokens 目标最大 Token 数
@@ -758,8 +779,71 @@ if (!function_exists('ai_compress_prompt')) {
     function ai_compress_prompt(string $prompt, ?int $maxTokens = null): string
     {
         static $compressor = null;
-        $compressor ??= new \Kode\AiAgent\Token\PromptCompressor();
+        $compressor ??= new \Kode\AiAgent\Token\SkillBasedCompressor();
         return $compressor->compress($prompt, $maxTokens);
+    }
+}
+
+if (!function_exists('ai_compress_savings')) {
+    /**
+     * 计算 Prompt 压缩可节省的 Token
+     *
+     * @param string $prompt 原始 Prompt
+     * @param int|null $maxTokens 目标最大 Token 数
+     * @return array{original: int, compressed: int, saved: int, ratio: float, skills: array<int, string>}
+     *
+     * @example
+     * ```php
+     * $savings = ai_compress_savings($longPrompt, maxTokens: 2000);
+     * ```
+     */
+    function ai_compress_savings(string $prompt, ?int $maxTokens = null): array
+    {
+        static $compressor = null;
+        $compressor ??= new \Kode\AiAgent\Token\SkillBasedCompressor();
+        return $compressor->savings($prompt, $maxTokens);
+    }
+}
+
+if (!function_exists('ai_token_balance_report')) {
+    /**
+     * 生成多模型 Token 消耗对比报告
+     *
+     * @param array<int, string> $models 候选模型
+     * @param string $text 文本
+     * @return array<int, array{model: string, estimated_tokens: int, equivalent_tokens: int, cost_index: float}>
+     *
+     * @example
+     * ```php
+     * $report = ai_token_balance_report(['gpt-4o', 'deepseek-chat'], '你好世界');
+     * ```
+     */
+    function ai_token_balance_report(array $models, string $text): array
+    {
+        static $balancer = null;
+        $balancer ??= new \Kode\AiAgent\Token\TokenBalancer();
+        return $balancer->report($models, $text);
+    }
+}
+
+if (!function_exists('ai_recommend_model')) {
+    /**
+     * 根据文本推荐最省 Token 的模型
+     *
+     * @param array<int, string> $models 候选模型
+     * @param string $text 文本
+     * @return string 推荐模型
+     *
+     * @example
+     * ```php
+     * $model = ai_recommend_model(['gpt-4o', 'deepseek-chat'], '你好世界');
+     * ```
+     */
+    function ai_recommend_model(array $models, string $text): string
+    {
+        static $balancer = null;
+        $balancer ??= new \Kode\AiAgent\Token\TokenBalancer();
+        return $balancer->recommendMostEfficient($models, $text);
     }
 }
 

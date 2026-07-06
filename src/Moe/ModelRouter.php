@@ -59,7 +59,7 @@ final class ModelRouter implements RouterInterface
     #[\NoDiscard]
     public function dispatch(PromptInterface $prompt, array $options = []): ResponseInterface
     {
-        $context = RoutingContext::fromArray($options);
+        $context = RoutingContext::fromArray($options, $prompt->text());
         $expert = $this->select($context);
 
         $this->logger->debug('MOE 路由', [
@@ -89,7 +89,7 @@ final class ModelRouter implements RouterInterface
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
-        $context = RoutingContext::fromArray($options + ['stream' => true]);
+        $context = RoutingContext::fromArray($options + ['stream' => true], $prompt->text());
         $expert = $this->select($context);
 
         $this->logger->debug('MOE 流式路由', [
