@@ -699,3 +699,129 @@ if (!function_exists('ai_image_to_video')) {
         return ai_seedance(null, $options)->imageToVideo($image, $prompt, $options);
     }
 }
+
+if (!function_exists('ai_moe')) {
+    /**
+     * 获取 MOE 网关实例
+     *
+     * 单 Key 多模型智能路由网关。后台申请各平台 Key，
+     * 用户只感知一个网关，自动选择最优模型。
+     *
+     * @return \Kode\AiAgent\Moe\MoEGateway
+     *
+     * @example
+     * ```php
+     * $gateway = ai_moe();
+     * $gateway->addExpert('openai', env('OPENAI_API_KEY'), ['chat', 'vision']);
+     * $gateway->addExpert('deepseek', env('DEEPSEEK_API_KEY'), ['chat', 'code']);
+     * $response = $gateway->chat('你好');
+     * ```
+     */
+    function ai_moe(): \Kode\AiAgent\Moe\MoEGateway
+    {
+        return \Kode\AiAgent\Support\Facade\MoE::gateway();
+    }
+}
+
+if (!function_exists('ai_moe_chat')) {
+    /**
+     * MOE 智能聊天（自动路由）
+     *
+     * @param string $message 用户消息
+     * @param array $options 选项（capability, preferred_platform 等）
+     * @return \Kode\AiAgent\Domain\Contract\ResponseInterface
+     *
+     * @example
+     * ```php
+     * $response = ai_moe_chat('分析这段代码', ['capability' => 'code']);
+     * ```
+     */
+    function ai_moe_chat(string $message, array $options = []): \Kode\AiAgent\Domain\Contract\ResponseInterface
+    {
+        return \Kode\AiAgent\Support\Facade\MoE::chat($message, $options);
+    }
+}
+
+if (!function_exists('ai_compress_prompt')) {
+    /**
+     * 压缩 Prompt，降低 Token 消耗
+     *
+     * @param string $prompt 原始 Prompt
+     * @param int|null $maxTokens 目标最大 Token 数
+     * @return string 压缩后的 Prompt
+     *
+     * @example
+     * ```php
+     * $compressed = ai_compress_prompt($longPrompt, maxTokens: 2000);
+     * ```
+     */
+    function ai_compress_prompt(string $prompt, ?int $maxTokens = null): string
+    {
+        static $compressor = null;
+        $compressor ??= new \Kode\AiAgent\Token\PromptCompressor();
+        return $compressor->compress($prompt, $maxTokens);
+    }
+}
+
+if (!function_exists('ai_token_estimate')) {
+    /**
+     * 估算文本的 Token 数
+     *
+     * @param string $text 文本
+     * @return int Token 数估算
+     *
+     * @example
+     * ```php
+     * $tokens = ai_token_estimate('你好世界');
+     * ```
+     */
+    function ai_token_estimate(string $text): int
+    {
+        static $counter = null;
+        $counter ??= new \Kode\AiAgent\Token\TokenCounter();
+        return $counter->estimate($text);
+    }
+}
+
+if (!function_exists('ai_pii_mask')) {
+    /**
+     * 脱敏文本中的个人敏感信息
+     *
+     * @param string $text 原始文本
+     * @return string 脱敏后的文本
+     *
+     * @example
+     * ```php
+     * $safe = ai_pii_mask('我的手机是13800138000');
+     * // 输出: "我的手机是138****8000"
+     * ```
+     */
+    function ai_pii_mask(string $text): string
+    {
+        static $detector = null;
+        $detector ??= new \Kode\AiAgent\Security\PiiDetector();
+        return $detector->mask($text);
+    }
+}
+
+if (!function_exists('ai_check_injection')) {
+    /**
+     * 检查文本是否包含提示词注入攻击
+     *
+     * @param string $text 待检查文本
+     * @return bool 是否安全（true 表示安全）
+     *
+     * @example
+     * ```php
+     * if (!ai_check_injection($userInput)) {
+     *     throw new \Exception('检测到提示词注入');
+     * }
+     * ```
+     */
+    function ai_check_injection(string $text): bool
+    {
+        static $detector = null;
+        $detector ??= new \Kode\AiAgent\Security\PromptInjectionDetector();
+        return !$detector->isMalicious($text);
+    }
+}
