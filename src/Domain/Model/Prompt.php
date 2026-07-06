@@ -19,7 +19,7 @@ use Kode\AiAgent\Domain\Contract\PromptInterface;
  * $prompt = new Prompt('描述这张图片', ['url' => 'https://example.com/image.png']);
  * ```
  */
-readonly class Prompt implements PromptInterface
+final readonly class Prompt implements PromptInterface
 {
     /**
      * @param string $text 文本内容
@@ -62,7 +62,7 @@ readonly class Prompt implements PromptInterface
     public function with(array $values): static
     {
         $data = get_object_vars($this);
-        return new self(...array_merge($data, $values));
+        return new static(...array_merge($data, $values));
     }
 
     public function __toString(): string

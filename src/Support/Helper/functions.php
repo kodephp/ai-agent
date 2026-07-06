@@ -375,19 +375,22 @@ if (!function_exists('ai_drama_team')) {
     /**
      * 获取短剧团队实例（快速方法）
      *
-     * @param string|array $apiKey API Key
+     * @param \Kode\AiAgent\Domain\Contract\AdapterInterface $textAdapter 文本适配器
+     * @param \Kode\AiAgent\Domain\Contract\MultimodalInterface $multimodalAdapter 多模态适配器
      * @param array $config 配置
      * @return \Kode\AiAgent\Agent\ShortDramaTeam
      *
      * @example
      * ```php
-     * $team = ai_drama_team('sk-api-key');
+     * $textAdapter = AdapterFactory::openai('sk-api-key');
+     * $multimodalAdapter = AdapterFactory::create('seedance', ['api_key' => 'sk-video-key']);
+     * $team = ai_drama_team($textAdapter, $multimodalAdapter);
      * $result = $team->generate('友情主题短剧');
      * ```
      */
-    function ai_drama_team(string|array $apiKey, array $config = []): \Kode\AiAgent\Agent\ShortDramaTeam
+    function ai_drama_team(\Kode\AiAgent\Domain\Contract\AdapterInterface $textAdapter, \Kode\AiAgent\Domain\Contract\MultimodalInterface $multimodalAdapter, array $config = []): \Kode\AiAgent\Agent\ShortDramaTeam
     {
-        return new \Kode\AiAgent\Agent\ShortDramaTeam($apiKey, $config);
+        return new \Kode\AiAgent\Agent\ShortDramaTeam($textAdapter, $multimodalAdapter, $config);
     }
 }
 
@@ -410,10 +413,12 @@ if (!function_exists('ai_generate_drama')) {
      */
     function ai_generate_drama(string $topic, array $options = []): array
     {
-        $team = ai_drama_team(
-            $options['api_key'] ?? getenv('OPENAI_API_KEY') ?: '',
-            $options
+        $textAdapter = $options['text_adapter'] ?? \Kode\AiAgent\Infrastructure\Adapter\AdapterFactory::openai(
+            $options['api_key'] ?? getenv('OPENAI_API_KEY') ?: ''
         );
+        $multimodalAdapter = $options['multimodal_adapter'] ?? throw new \InvalidArgumentException('必须提供 multimodal_adapter 用于图像/视频生成');
+
+        $team = ai_drama_team($textAdapter, $multimodalAdapter, $options);
 
         if (isset($options['callback'])) {
             foreach ($options['callback'] as $event => $handler) {

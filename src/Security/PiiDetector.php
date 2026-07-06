@@ -33,7 +33,7 @@ final class PiiDetector
      */
     private array $patterns;
 
-    public function __construct(bool $autoMask = true)
+    public function __construct(private bool $autoMask = true)
     {
         $this->patterns = [
             [
@@ -102,6 +102,10 @@ final class PiiDetector
      */
     public function mask(string $text): string
     {
+        if (!$this->autoMask) {
+            return $text;
+        }
+
         foreach ($this->patterns as $pattern) {
             $text = preg_replace_callback(
                 $pattern['pattern'],

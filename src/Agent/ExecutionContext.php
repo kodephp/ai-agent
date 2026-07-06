@@ -42,7 +42,7 @@ final class ExecutionContext
         string $id,
         private string $task,
         private string $role,
-        private array $options = [],
+        array $options = [],
     ) {
         $this->id = $id;
         $this->maxAttempts = $options['max_attempts'] ?? 3;
@@ -103,7 +103,7 @@ final class ExecutionContext
 
     public function duration(): float
     {
-        if ($this->startTime === 0) {
+        if ($this->startTime == 0) {
             return 0;
         }
 
@@ -113,7 +113,7 @@ final class ExecutionContext
 
     public function isTimeout(): bool
     {
-        if ($this->startTime === 0 || $this->status !== self::STATUS_RUNNING) {
+        if ($this->startTime == 0 || $this->status !== self::STATUS_RUNNING) {
             return false;
         }
 

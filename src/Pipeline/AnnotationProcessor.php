@@ -26,8 +26,8 @@ final class AnnotationProcessor
 {
     private Reader $reader;
     private ?CacheInterface $cache;
-    private array $rateLimitStore = [];
     private array $config;
+    private array $rateLimitStore = [];
 
     public function __construct(
         ?CacheInterface $cache = null,
@@ -36,6 +36,11 @@ final class AnnotationProcessor
         $this->reader = new Reader();
         $this->cache = $cache;
         $this->config = $config;
+    }
+
+    public function config(): array
+    {
+        return $this->config;
     }
 
     /**

@@ -38,15 +38,13 @@ use Nyholm\Psr7\Request;
  * ]);
  * ```
  */
-readonly class BaiduAdapter implements AdapterInterface
+final class BaiduAdapter implements AdapterInterface
 {
     use StreamHelper;
 
     private const BASE_URL = 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat';
     private const TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
     private const DEFAULT_MODEL = 'completions_pro';
-    private const DEFAULT_TIMEOUT = 30;
-    private const TOKEN_CACHE_KEY = 'baidu_access_token';
 
     private ?ApiKey $apiKey;
     private ?string $secretKey;

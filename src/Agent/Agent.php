@@ -196,8 +196,8 @@ final class Agent
             return [];
         }
 
-        $choice = $choices[0] ?? [];
-        $message = $choice['message'] ?? $choice ?? [];
+        $choice = $choices[0];
+        $message = $choice['message'] ?? $choice;
         
         return $message['tool_calls'] ?? [];
     }

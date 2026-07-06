@@ -48,7 +48,7 @@ readonly class MultimodalService
 
         try {
             $response = $this->multimodalAdapter->generateImage($prompt, $options);
-            $this->log('info', '图像生成成功', ['image_url' => $response->image()]);
+            $this->log('info', '图像生成成功', ['image_url' => $response->firstImage()]);
 
             return $response;
         } catch (\Throwable $e) {
@@ -68,7 +68,7 @@ readonly class MultimodalService
 
         try {
             $response = $this->multimodalAdapter->editImage($mediaFile->path, $prompt, $options);
-            $this->log('info', '图像编辑成功', ['image_url' => $response->image()]);
+            $this->log('info', '图像编辑成功', ['image_url' => $response->firstImage()]);
 
             return $response;
         } catch (\Throwable $e) {
@@ -87,7 +87,7 @@ readonly class MultimodalService
 
         try {
             $response = $this->multimodalAdapter->generateImageVariation($mediaFile->path, $options);
-            $this->log('info', '图像变体生成成功', ['image_url' => $response->image()]);
+            $this->log('info', '图像变体生成成功', ['image_url' => $response->firstImage()]);
 
             return $response;
         } catch (\Throwable $e) {
@@ -105,7 +105,7 @@ readonly class MultimodalService
 
         try {
             $response = $this->multimodalAdapter->generateVideo($prompt, $options);
-            $this->log('info', '视频生成成功', ['video_url' => $response->video()]);
+            $this->log('info', '视频生成成功', ['video_url' => $response->firstVideo()]);
 
             return $response;
         } catch (\Throwable $e) {
@@ -124,7 +124,7 @@ readonly class MultimodalService
 
         try {
             $response = $this->multimodalAdapter->imageToVideo($mediaFile->path, $prompt, $options);
-            $this->log('info', '图像转视频成功', ['video_url' => $response->video()]);
+            $this->log('info', '图像转视频成功', ['video_url' => $response->firstVideo()]);
 
             return $response;
         } catch (\Throwable $e) {

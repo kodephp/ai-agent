@@ -73,7 +73,7 @@ kode/ai-agent
 ### 3.1 创建基础 Agent
 
 ```php
-use Kode\AiAgent\Agent;
+use Kode\AiAgent\Agent\Agent;
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 use Kode\AiAgent\Log\LogManager;
 
@@ -84,7 +84,7 @@ LogManager::init(['env' => 'dev']);
 $agent = new Agent(
     adapter: AdapterFactory::openai('sk-your-api-key'),
     config: [
-        'model' => 'gpt-4',
+        'model' => 'gpt-4o',
         'temperature' => 0.7,
         'max_tokens' => 2000,
     ]
@@ -101,8 +101,16 @@ echo $response->content();
 use Kode\AiAgent\Application\Service\MultimodalService;
 use Kode\AiAgent\Support\Facade\Multimodal;
 
-// 使用门面
-Multimodal::init('sk-your-api-key');
+// 使用门面（需先构建并设置默认多模态服务）
+use Kode\AiAgent\Infrastructure\Adapter\SeedanceAdapter;
+use Kode\AiAgent\Support\Builder\MultimodalBuilder;
+
+$service = MultimodalBuilder::create()
+    ->withAdapter(new SeedanceAdapter(['api_key' => 'sk-your-api-key']))
+    ->withUploadDir('/tmp/uploads')
+    ->build();
+
+Multimodal::setDefaultService($service);
 
 // 文生图
 $image = Multimodal::generateImage('一幅 sunset 风景画');
@@ -129,20 +137,20 @@ use Kode\AiAgent\Agent\SupervisorAgent;
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 
 $supervisor = new SupervisorAgent(
-    adapter: AdapterFactory::openai('sk-supervisor-key'),
-    config: [
-        'maxAgents' => 5,
-        'costTracker' => true,
-    ]
+    new Agent(AdapterFactory::openai('sk-supervisor-key', ['model' => 'gpt-4o']))
 );
 
-// 注册子 Agent
-$supervisor->registerAgent('writer', $writerAgent);
-$supervisor->registerAgent('artist', $artistAgent);
-$supervisor->registerAgent('editor', $editorAgent);
+// 注册子 Agent（必须为 Agent 实例）
+$supervisor->register('writer', $writerAgent, '负责编写剧本');
+$supervisor->register('artist', $artistAgent, '负责生成图像');
+$supervisor->register('editor', $editorAgent, '负责合成视频');
 
 // 执行任务
-$result = $supervisor->execute('生成一个关于友情的短剧');
+$result = $supervisor->supervise('生成一个关于友情的短剧', [
+    ['role' => 'writer', 'task' => '创作 5 幕短剧剧本'],
+    ['role' => 'artist', 'task' => '为每幕生成配图'],
+    ['role' => 'editor', 'task' => '将图像合成最终视频'],
+]);
 ```
 
 ### 4.2 流水线模式
@@ -150,26 +158,21 @@ $result = $supervisor->execute('生成一个关于友情的短剧');
 各 Agent 按顺序执行，形成流水线：
 
 ```php
-use Kode\AiAgent\Agent\Pipeline\PipelineAgent;
+use Kode\AiAgent\Agent\RoleAgentTeam;
 
-$pipeline = new PipelineAgent();
+$team = new RoleAgentTeam();
+$team->assign('编剧', $writerAgent)
+    ->assign('画师', $artistAgent)
+    ->assign('剪辑', $editorAgent);
 
-// 添加流水线节点
-$pipeline->pipe('script', function($context) {
-    // 编剧 Agent：生成剧本
-    return $this->writerAgent->generateScript($context['topic']);
-})
-->pipe('images', function($context) {
-    // 画师 Agent：根据剧本生成图像
-    return $this->artistAgent->generateImages($context['script']);
-})
-->pipe('video', function($context) {
-    // 剪辑 Agent：合成视频
-    return $this->editorAgent->composeVideo($context['images']);
-});
+// 按顺序执行
+$result = $team->run('友情主题短剧', [
+    ['role' => '编剧', 'task' => '生成剧本：{{goal}}'],
+    ['role' => '画师', 'task' => '根据剧本生成场景图'],
+    ['role' => '剪辑', 'task' => '将场景图合成视频'],
+]);
 
-// 执行流水线
-$result = $pipeline->execute(['topic' => '友情主题短剧']);
+echo $result['outputs'][2]['content'];
 ```
 
 ### 4.3 并行执行模式
@@ -200,13 +203,15 @@ foreach ($tasks as $task) {
 ### 4.4 完整多 Agent 协作示例
 
 ```php
-use Kode\AiAgent\Agent;
+use Kode\AiAgent\Agent\Agent;
 use Kode\AiAgent\Agent\SupervisorAgent;
 use Kode\AiAgent\Application\Service\MultimodalService;
 use Kode\AiAgent\Drama\DramAgentV2;
 use Kode\AiAgent\Async\ParallelExecutor;
 use Kode\AiAgent\Log\LogManager;
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+use Kode\AiAgent\Infrastructure\Adapter\SeedanceAdapter;
+use Kode\AiAgent\Support\Builder\MultimodalBuilder;
 
 /**
  * 多 Agent 协作短剧生成系统
@@ -234,12 +239,18 @@ final class MultiAgentDramaSystem
             ['model' => $this->config['script_model']]
         );
 
-        $this->imageAgent = new MultimodalService(
-            AdapterFactory::openai($config['api_key'] ?? 'sk-xxx')
-        );
+        $multimodalAdapter = new SeedanceAdapter([
+            'api_key' => $config['api_key'] ?? 'sk-xxx',
+            'model' => $this->config['image_model'],
+        ]);
+
+        $this->imageAgent = MultimodalBuilder::create()
+            ->withAdapter($multimodalAdapter)
+            ->withUploadDir('/tmp/uploads')
+            ->build();
 
         $this->videoAgent = new DramAgentV2(
-            AdapterFactory::openai($config['api_key'] ?? 'sk-xxx'),
+            $multimodalAdapter,
             ['scenes' => 5]
         );
 
@@ -451,11 +462,15 @@ use Kode\AiAgent\Subtitle\SubtitleGenerator;
 
 // 初始化
 LogManager::init(['env' => 'dev']);
-AdapterFactory::setDefault('openai', 'sk-your-api-key');
+
+$multimodalAdapter = new SeedanceAdapter([
+    'api_key' => 'sk-your-api-key',
+    'model' => 'seedance-2',
+]);
 
 // 创建短剧 Agent
 $agent = new DramAgentV2(
-    adapter: AdapterFactory::openai('sk-your-api-key'),
+    adapter: $multimodalAdapter,
     config: [
         'scenes' => 5,
         'duration_per_scene' => 10,
@@ -545,7 +560,6 @@ $composer = new VideoComposerV3();
 $composer->addSceneVideos($sceneVideos);
 
 // 添加转场
-$transitionManager = $composer->getTransitionManager();
 for ($i = 0; $i < count($sceneVideos) - 1; $i++) {
     $composer->addTransition(
         "scene-{$i}",
@@ -599,13 +613,13 @@ $subtitleGenerator->save($subtitles, '/path/to/subtitles.srt');
 $clipper = new VideoClipper();
 
 // 剪裁前 3 秒开场动画
-$clipper->cut($videoWithVoice, 0, 3);
+$trimmed = $clipper->cut($videoWithVoice, 0, 3);
 
 // 添加片尾彩蛋
-$clipper->concatenate([
-    $videoWithVoice,
-    '/path/to/credits.mp4',
-], $output);
+$merger = new \Kode\AiAgent\Video\VideoMerger();
+$merger->addSegment($trimmed);
+$merger->addSegment('/path/to/credits.mp4');
+$output = $merger->merge();
 
 echo "最终视频输出：{$output}\n";
 ```
@@ -665,85 +679,71 @@ use Kode\AiAgent\Domain\Contract\AdapterInterface;
 
 class CustomAgent extends Agent
 {
-    private array $tools = [];
-
     /**
-     * 注册工具
+     * 自定义工具调用入口
      */
-    public function registerTool(string $name, callable $handler, string $description): self
+    public function invokeTool(string $name, array $params = []): mixed
     {
-        $this->tools[$name] = [
-            'handler' => $handler,
-            'description' => $description,
-        ];
-        return $this;
+        return match ($name) {
+            'generate_image' => $this->generateImage($params['prompt'] ?? ''),
+            'play_music' => $this->playMusic($params['song'] ?? ''),
+            default => throw new \RuntimeException("未知工具: {$name}"),
+        };
     }
 
-    /**
-     * 使用工具执行任务
-     */
-    public function useTool(string $name, array $params = []): mixed
+    private function generateImage(string $prompt): string
     {
-        if (!isset($this->tools[$name])) {
-            throw new \RuntimeException("未知工具: {$name}");
-        }
-
-        return ($this->tools[$name]['handler'])($params);
+        // 自定义图像生成逻辑
+        return "image:{$prompt}";
     }
 
-    /**
-     * 获取可用工具列表
-     */
-    public function getAvailableTools(): array
+    private function playMusic(string $song): string
     {
-        return array_map(
-            fn($name, $tool) => ['name' => $name, 'description' => $tool['description']],
-            array_keys($this->tools),
-            $this->tools
-        );
+        // 自定义音乐播放逻辑
+        return "playing:{$song}";
     }
 }
 
 // 使用自定义 Agent
 $agent = new CustomAgent($adapter);
 
-$agent->registerTool('generate_image', function($params) {
-    return $this->multimodal->generateImage($params['prompt']);
-}, '根据描述生成图像');
+$agent->registerTool('generate_image', '根据描述生成图像', function(string $prompt): string {
+    return "image:{$prompt}";
+});
 
-$agent->registerTool('play_music', function($params) {
-    return $this->musicPlayer->play($params['song']);
-}, '播放音乐');
+$agent->registerTool('play_music', '播放音乐', function(string $song): string {
+    return "playing:{$song}";
+});
 ```
 
 ### 6.4 成本追踪与预算控制
 
 ```php
 use Kode\AiAgent\Agent\CostTracker;
+use Kode\AiAgent\Agent\Agent;
+use Kode\AiAgent\Agent\SupervisorAgent;
+use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 
 $tracker = new CostTracker();
 
-// 设置预算限制
-$tracker->setBudget('daily', 100.00);  // 每日预算 100 美元
-$tracker->setBudget('monthly', 1000.00); // 每月预算 1000 美元
+// 追踪一次调用
+$tracker->track('gpt-4o', 100, 200);
 
-// 在 SupervisorAgent 中启用
-$supervisor = new SupervisorAgent($adapter, [
-    'costTracker' => $tracker,
+// 创建主管 Agent（传入 Agent 实例）
+$supervisor = new SupervisorAgent(
+    new Agent(AdapterFactory::openai('sk-supervisor-key', ['model' => 'gpt-4o']))
+);
+
+// 执行监督任务
+$result = $supervisor->supervise($task, [
+    ['role' => 'executor', 'task' => '实现功能'],
 ]);
 
-// 检查预算
-if ($tracker->checkBudget()) {
-    // 继续执行任务
-    $result = $supervisor->execute($task);
-} else {
-    echo "预算超限，请升级套餐或明天重试";
-}
-
 // 获取使用报告
-$report = $tracker->getReport();
-echo "今日消费：{$report['today']['total_cost']}\n";
-echo "Token 使用：{$report['today']['total_tokens']}\n";
+$report = $tracker->summary();
+echo "总消费：{$report['total_cost']}\n";
+echo "Token 使用：{$report['total_tokens']}\n";
+echo "请求次数：{$report['request_count']}\n";
 ```
 
 ---
@@ -836,6 +836,6 @@ kode/ai-agent/
 
 ---
 
-**版本**: v2.4.0
-**更新日期**: 2026-03-24
+**版本**: v2.19.0
+**更新日期**: 2026-07-06
 **维护者**: KodePHP Team

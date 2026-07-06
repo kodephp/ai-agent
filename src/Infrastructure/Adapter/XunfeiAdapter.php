@@ -31,13 +31,12 @@ use Nyholm\Psr7\Request;
  * ]);
  * ```
  */
-readonly class XunfeiAdapter implements AdapterInterface
+final class XunfeiAdapter implements AdapterInterface
 {
     use StreamHelper;
 
     private const BASE_URL = 'https://spark-api-open.xf-yun.com/v1';
     private const DEFAULT_MODEL = 'generalv3.5';
-    private const DEFAULT_TIMEOUT = 60;
     private const DOMAIN_MAP = [
         'generalv1' => 'general',
         'generalv2' => 'generalv2',

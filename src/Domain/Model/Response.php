@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kode\AiAgent\Domain\Model;
 
 use Kode\AiAgent\Domain\Contract\ResponseInterface;
-use Kode\Message\Message;
 
 /**
  * AI 响应值对象
@@ -31,7 +30,7 @@ use Kode\Message\Message;
  * echo $response->toJson();
  * ```
  */
-readonly class Response implements ResponseInterface
+final readonly class Response implements ResponseInterface
 {
     public function __construct(
         public string $content = '',
@@ -131,24 +130,25 @@ readonly class Response implements ResponseInterface
      */
     public function toArray(): array
     {
-        $message = (new Message())
-            ->code($this->code)
-            ->msg($this->msg)
-            ->data([
+        $result = [
+            'code' => $this->code,
+            'msg' => $this->msg,
+            'duration' => $this->duration,
+            'data' => [
                 'content' => $this->content,
                 'choices' => $this->choices,
                 'usage' => $this->usage,
-            ])
-            ->ext('duration', $this->duration);
+            ],
+        ];
 
         if ($this->requestId !== '') {
-            $message->ext('request_id', $this->requestId);
+            $result['request_id'] = $this->requestId;
         }
         if ($this->model !== '') {
-            $message->ext('model', $this->model);
+            $result['model'] = $this->model;
         }
 
-        return $message->result();
+        return $result;
     }
 
     /**
@@ -170,7 +170,7 @@ readonly class Response implements ResponseInterface
     public function with(array $values): static
     {
         $data = get_object_vars($this);
-        return new self(
+        return new static(
             content: $values['content'] ?? $data['content'],
             choices: $values['choices'] ?? $data['choices'],
             usage: $values['usage'] ?? $data['usage'],

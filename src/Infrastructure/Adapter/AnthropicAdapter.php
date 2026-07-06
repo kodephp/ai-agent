@@ -18,16 +18,12 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-readonly class AnthropicAdapter implements AdapterInterface
+final class AnthropicAdapter implements AdapterInterface
 {
     use StreamHelper;
 
     private const BASE_URL = 'https://api.anthropic.com/v1/messages';
     private const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
-    private const DEFAULT_TIMEOUT = 30;
-    private const DEFAULT_CONNECT_TIMEOUT = 5;
-    private const STREAM_IDLE_TIMEOUT = 60;
-
     public function __construct(
         private HttpClient $client,
         private array $config,

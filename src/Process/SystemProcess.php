@@ -34,6 +34,8 @@ final class SystemProcess
     private ?int $pid = null;
     /** @var resource|false */
     private $handle = false;
+    /** @var array<int, resource> */
+    private array $pipes = [];
     private string $output = '';
     private string $errorOutput = '';
     private string $status = 'pending';
@@ -95,12 +97,13 @@ final class SystemProcess
             throw new \RuntimeException("进程启动失败: {$this->command}");
         }
 
+        $this->pipes = $pipes;
         foreach ($pipes as $pipe) {
             stream_set_blocking($pipe, false);
         }
 
         $status = proc_get_status($this->handle);
-        $this->pid = $status['pid'] ?? null;
+        $this->pid = $status['pid'];
         $this->status = 'running';
         $this->startTime = microtime(true);
 
@@ -128,22 +131,23 @@ final class SystemProcess
         $output = '';
         $status = proc_get_status($this->handle);
 
-        if (isset($status['pipe']) && is_resource($status['pipe'])) {
-            while ($data = fread($status['pipe'], $this->options['buffer_size'])) {
+        if (isset($this->pipes[1]) && is_resource($this->pipes[1])) {
+            while ($data = fread($this->pipes[1], $this->options['buffer_size'])) {
                 $output .= $data;
             }
         }
 
-        if (isset($status['pipe']) && is_resource($status['pipe'])) {
-            while ($data = fread($status['pipe'], $this->options['buffer_size'])) {
+        if (isset($this->pipes[2]) && is_resource($this->pipes[2])) {
+            while ($data = fread($this->pipes[2], $this->options['buffer_size'])) {
                 $this->errorOutput .= $data;
             }
         }
 
         if (!$status['running']) {
             $this->status = 'completed';
-            $this->exitCode = $status['exitcode'] ?? -1;
+            $this->exitCode = $status['exitcode'];
             $this->endTime = microtime(true);
+            $this->closePipes();
 
             LogManager::info('进程执行完成', [
                 'pid' => $this->pid,
@@ -267,12 +271,25 @@ final class SystemProcess
      */
     public function duration(): float
     {
-        if ($this->startTime === 0) {
-            return 0;
+        if ($this->startTime === 0.0) {
+            return 0.0;
         }
 
         $end = $this->endTime ?: microtime(true);
         return round($end - $this->startTime, 3);
+    }
+
+    /**
+     * 关闭进程管道
+     */
+    private function closePipes(): void
+    {
+        foreach ($this->pipes as $pipe) {
+            if (is_resource($pipe)) {
+                fclose($pipe);
+            }
+        }
+        $this->pipes = [];
     }
 
     /**
@@ -282,6 +299,8 @@ final class SystemProcess
      */
     public function __destruct()
     {
+        $this->closePipes();
+
         if ($this->handle !== false) {
             if (is_resource($this->handle)) {
                 proc_close($this->handle);

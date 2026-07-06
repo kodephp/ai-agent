@@ -23,16 +23,12 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-readonly class AliyunAdapter implements AdapterInterface
+final class AliyunAdapter implements AdapterInterface
 {
     use StreamHelper;
 
     private const BASE_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
     private const DEFAULT_MODEL = 'qwen-turbo';
-    private const DEFAULT_TIMEOUT = 30;
-    private const DEFAULT_CONNECT_TIMEOUT = 5;
-    private const STREAM_IDLE_TIMEOUT = 60;
-
     private ?ApiKey $apiKey;
 
     public function __construct(

@@ -77,8 +77,7 @@ final class TokenCounter
     {
         $total = 0;
         foreach ($messages as $message) {
-            $content = is_string($message['content'] ?? null) ? $message['content'] : '';
-            $total += $this->estimate($content) + 4;
+            $total += $this->estimate($message['content']) + 4;
         }
         return $total;
     }

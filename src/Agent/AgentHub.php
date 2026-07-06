@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Agent;
 
-use Kode\AiAgent\Domain\Contract\AdapterInterface;
+use Kode\AiAgent\Domain\Contract\{AdapterInterface, MultimodalInterface};
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 use Kode\AiAgent\Infrastructure\Adapter\OpenAiAdapter;
 
@@ -40,6 +40,7 @@ class AgentHub
     private string $apiKey;
     private array $config;
     private AdapterInterface $adapter;
+    private ?MultimodalInterface $multimodalAdapter;
     private array $agents = [];
     private array $sharedOptions = [];
     private static ?self $instance = null;
@@ -47,16 +48,23 @@ class AgentHub
     public function __construct(
         string $apiKey,
         array $config = [],
-        ?AdapterInterface $adapter = null
+        ?AdapterInterface $adapter = null,
+        ?MultimodalInterface $multimodalAdapter = null,
     ) {
         $this->apiKey = $apiKey;
         $this->config = $config;
-        $this->adapter = $adapter ?? AdapterFactory::openai($apiKey, $config);
+        $this->adapter = $adapter ?? AdapterFactory::openai($this->apiKey, $config);
+        $this->multimodalAdapter = $multimodalAdapter;
         $this->sharedOptions = [
-            'api_key' => $apiKey,
+            'api_key' => $this->apiKey,
             'base_url' => $config['base_url'] ?? null,
             'timeout' => $config['timeout'] ?? 30,
         ];
+    }
+
+    public function apiKey(): string
+    {
+        return $this->apiKey;
     }
 
     public static function create(string $apiKey, array $config = []): self
@@ -192,7 +200,15 @@ class AgentHub
 
     public function shortDrama(string $topic, array $options = []): array
     {
-        $team = new ShortDramaTeam($this->apiKey, array_merge($this->config, $options));
+        if ($this->multimodalAdapter === null) {
+            throw new \InvalidArgumentException('生成短剧需要多模态适配器，请通过 multimodalAdapter 参数传入');
+        }
+
+        $team = new ShortDramaTeam(
+            $this->adapter,
+            $this->multimodalAdapter,
+            array_merge($this->config, $options)
+        );
         return $team->generate($topic, $options);
     }
 
@@ -238,9 +254,11 @@ class AgentHub
     public function pipeline(callable ...$stages): \Kode\AiAgent\Domain\Contract\ResponseInterface
     {
         $context = [];
+        $lastResult = null;
 
         foreach ($stages as $index => $stage) {
             $result = $stage($context, $this);
+            $lastResult = $result;
             $context["stage_{$index}_result"] = $result;
 
             if ($result instanceof \Kode\AiAgent\Domain\Contract\ResponseInterface) {
@@ -250,7 +268,7 @@ class AgentHub
             }
         }
 
-        return $context["stage_{$index}_result"];
+        return $lastResult ?? throw new \RuntimeException('Pipeline produced no result');
     }
 
     public function agents(): array

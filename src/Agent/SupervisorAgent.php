@@ -90,12 +90,20 @@ class SupervisorAgent
         return $this;
     }
 
+    public function maxHistorySize(): int
+    {
+        return $this->maxHistorySize;
+    }
+
     public function executionHistory(): array
     {
-        if ($this->useContextStorage) {
-            return ExecutionContext::getHistoryFromContext();
+        $history = ExecutionContext::getHistoryFromContext();
+
+        if (count($history) > $this->maxHistorySize) {
+            $history = array_slice($history, -$this->maxHistorySize);
         }
-        return ExecutionContext::getHistoryFromContext();
+
+        return $history;
     }
 
     public function clearHistory(): void

@@ -77,6 +77,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
             'image' => $this->generateImage($prompt, $options),
             'video' => $this->generateVideo($prompt, $options),
             'avatar' => $this->generateAvatarVideo($prompt, $options),
+            // @phpstan-ignore-next-line 防御性默认分支，处理运行时非预期值
             default => throw new InvalidInputException("不支持的输出类型: {$outputType}"),
         };
     }

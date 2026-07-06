@@ -35,7 +35,6 @@ final class MoEBuilder
     private ?int $perDayTokens = null;
     private ?float $perMonthCost = null;
     private ?\Psr\Log\LoggerInterface $logger = null;
-    private ?\Psr\SimpleCache\CacheInterface $cache = null;
     private bool|array $autoCompress = false;
 
     private function __construct() {}
@@ -124,15 +123,6 @@ final class MoEBuilder
     public function logger(\Psr\Log\LoggerInterface $logger): self
     {
         $this->logger = $logger;
-        return $this;
-    }
-
-    /**
-     * 设置缓存
-     */
-    public function cache(\Psr\SimpleCache\CacheInterface $cache): self
-    {
-        $this->cache = $cache;
         return $this;
     }
 

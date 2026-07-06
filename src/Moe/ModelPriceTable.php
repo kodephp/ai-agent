@@ -18,8 +18,6 @@ final class ModelPriceTable
 {
     /**
      * 价格表：model => ['prompt' => $/1k, 'completion' => $/1k]
-     *
-     * @var array<string, array{prompt: float, completion: float}>
      */
     private const PRICES = [
         // OpenAI

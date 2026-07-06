@@ -48,9 +48,9 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
     private const BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/';
     private const DEFAULT_MODEL = 'seedance-2.0-pro';
     private const DEFAULT_TIMEOUT = 120;
-    private const DEFAULT_CONNECT_TIMEOUT = 10;
     private const DEFAULT_DURATION = 10;
     private const DEFAULT_RESOLUTION = '720p';
+    private const DEFAULT_FPS = 24;
 
     public const SUPPORTED_RESOLUTIONS = ['720p', '1080p'];
 
@@ -195,10 +195,10 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
             $videoUrl = $result['data']['video_url'] ?? '';
             $taskId = $result['data']['task_id'] ?? '';
 
-            return new VideoResponse(
+            return (new VideoResponse(
                 videos: $videoUrl !== '' ? [$videoUrl] : [],
                 videoDuration: $options['duration'] ?? self::DEFAULT_DURATION,
-            )->with([
+            ))->with([
                 'duration' => $duration,
                 'requestId' => $result['request_id'] ?? $taskId,
                 'model' => $options['model'] ?? self::DEFAULT_MODEL,
@@ -252,10 +252,10 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
             $videoUrl = $result['data']['video_url'] ?? '';
             $taskId = $result['data']['task_id'] ?? '';
 
-            return new VideoResponse(
+            return (new VideoResponse(
                 videos: $videoUrl !== '' ? [$videoUrl] : [],
                 videoDuration: $options['duration'] ?? self::DEFAULT_DURATION,
-            )->with([
+            ))->with([
                 'duration' => $duration,
                 'requestId' => $result['request_id'] ?? $taskId,
                 'model' => $options['model'] ?? self::DEFAULT_MODEL,
@@ -324,10 +324,10 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
                 $videos = [$result['data']['video_url']];
             }
 
-            return new VideoResponse(
+            return (new VideoResponse(
                 videos: $videos,
                 videoDuration: ($options['duration'] ?? self::DEFAULT_DURATION) * count($videos),
-            )->with([
+            ))->with([
                 'duration' => $duration,
                 'requestId' => $result['request_id'] ?? '',
                 'model' => $options['model'] ?? self::DEFAULT_MODEL,

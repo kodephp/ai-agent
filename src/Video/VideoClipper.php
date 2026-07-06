@@ -219,7 +219,7 @@ final class VideoClipper
      * @param string $inputPath 输入视频路径
      * @param float $chunkDuration 每段时长（秒）
      * @param array $options 选项
-     * @return array<string, array{path: string, index: int, start: float, end: float}> 分割结果
+     * @return array<int, array{path: string, index: int, start: float, end: float}> 分割结果
      */
     public function split(string $inputPath, float $chunkDuration, array $options = []): array
     {

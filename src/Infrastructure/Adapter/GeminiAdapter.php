@@ -18,16 +18,12 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-readonly class GeminiAdapter implements AdapterInterface
+final class GeminiAdapter implements AdapterInterface
 {
     use StreamHelper;
 
     private const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
     private const DEFAULT_MODEL = 'gemini-2.0-flash';
-    private const DEFAULT_TIMEOUT = 30;
-    private const DEFAULT_CONNECT_TIMEOUT = 5;
-    private const STREAM_IDLE_TIMEOUT = 60;
-
     public function __construct(
         private HttpClient $client,
         private array $config,

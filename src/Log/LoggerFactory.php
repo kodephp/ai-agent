@@ -69,7 +69,7 @@ final class LoggerFactory
     private static function parseLevel(string|int $level): Level
     {
         if (is_int($level)) {
-            return Level::fromName(Level::getName($level));
+            return Level::tryFrom($level) ?? Level::Info;
         }
 
         return match (strtolower($level)) {

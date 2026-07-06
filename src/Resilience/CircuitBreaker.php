@@ -171,7 +171,8 @@ final class CircuitBreaker
         if ($this->state === self::STATE_HALF_OPEN) {
             $this->halfOpenFailure++;
             $this->halfOpenSuccess = 0;
-            if ($this->halfOpenFailure >= 1) {
+            $attempts = $this->halfOpenFailure + $this->halfOpenSuccess;
+            if ($this->halfOpenFailure >= 1 || $attempts >= $this->halfOpenMaxAttempts) {
                 $this->transition(self::STATE_OPEN);
             }
             return;
@@ -198,7 +199,7 @@ final class CircuitBreaker
 
     private function notifyStateChange(string $from, string $to): void
     {
-        if ($this->onStateChange !== null && is_callable($this->onStateChange)) {
+        if ($this->onStateChange !== null) {
             ($this->onStateChange)($from, $to, $this);
         }
     }

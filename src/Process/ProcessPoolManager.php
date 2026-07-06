@@ -138,7 +138,7 @@ final class ProcessPoolManager
                 }
             }
 
-            if ($this->activeCount >= $this->maxProcesses && $this->isRunning()) {
+            if ($this->activeCount >= $this->maxProcesses) {
                 $this->waitForCompletion();
             }
         }

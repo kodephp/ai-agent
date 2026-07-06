@@ -20,21 +20,20 @@ readonly class Progress
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_FAILED = 'failed';
 
+    public float $createdAt;
+    public float $updatedAt;
+
     public function __construct(
         public string $taskId,
         public string $status,
         public int $progress = 0,
         public string $message = '',
         public ?array $data = null,
-        public float $createdAt = 0.0,
-        public float $updatedAt = 0.0,
+        float $createdAt = 0.0,
+        float $updatedAt = 0.0,
     ) {
-        if ($this->createdAt === 0.0) {
-            $this->createdAt = microtime(true);
-        }
-        if ($this->updatedAt === 0.0) {
-            $this->updatedAt = microtime(true);
-        }
+        $this->createdAt = $createdAt === 0.0 ? microtime(true) : $createdAt;
+        $this->updatedAt = $updatedAt === 0.0 ? microtime(true) : $updatedAt;
     }
 
     public function isPending(): bool

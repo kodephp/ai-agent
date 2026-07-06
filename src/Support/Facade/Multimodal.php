@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * @method static string platformName()
  * @method static string getDownloadPrompt(AvatarResponse $response)
  * @method static string getFileUrl(MediaFile $file)
- * @method static self using(string $platform)
+ * @method static MultimodalService using(string $platform)
  * @method static void setDefaultService(MultimodalService $service)
  * @method static void register(string $name, MultimodalService $service)
  * @method static MultimodalService service()
@@ -206,9 +206,9 @@ final class Multimodal extends Facade
         return self::service()->getFileUrl($file);
     }
 
-    public function using(string $platform): self
+    public function using(string $platform): MultimodalService
     {
-        return new self(self::resolveService($platform));
+        return self::resolveService($platform);
     }
 
     public static function setDefaultService(MultimodalService $service): void
@@ -250,7 +250,7 @@ final class Multimodal extends Facade
         $contextLogger = KodeContext::get(self::CONTEXT_LOGGER_KEY);
         return new MultimodalService(
             $adapter,
-            $fileUploader ?? $contextUploader ?? self::$defaultFileUploader ?? new LocalFileUploader(),
+            $fileUploader ?? $contextUploader ?? self::$defaultFileUploader ?? new LocalFileUploader(sys_get_temp_dir() . '/ai-agent-uploads'),
             $logger ?? $contextLogger ?? self::$defaultLogger
         );
     }

@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Kode\AiAgent\Agent;
 
 use Kode\AiAgent\Application\Service\MultimodalService;
-use Kode\AiAgent\Domain\Contract\AgentTeamInterface;
 use Kode\AiAgent\Domain\Contract\AdapterInterface;
+use Kode\AiAgent\Domain\Contract\MultimodalInterface;
 use Kode\AiAgent\Domain\Contract\ResponseInterface;
-use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
-use Kode\AiAgent\Log\LogManager;
+use Kode\AiAgent\Infrastructure\Persistence\LocalFileUploader;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -22,7 +21,10 @@ use Psr\Log\NullLogger;
  *
  * @example
  * ```php
- * $team = new ShortDramaTeam('sk-api-key');
+ * $textAdapter = AdapterFactory::openai('sk-text-key');
+ * $multimodalAdapter = AdapterFactory::create('seedance', ['api_key' => 'sk-video-key']);
+ *
+ * $team = new ShortDramaTeam($textAdapter, $multimodalAdapter);
  *
  * $result = $team->generate('一个关于友情的感人故事', [
  *     'scenes' => 5,
@@ -37,7 +39,6 @@ class ShortDramaTeam
 {
     private array $agents = [];
     private CostTracker $costTracker;
-    private LoggerInterface $logger;
     private array $callbacks = [];
 
     private Agent $writerAgent;
@@ -45,29 +46,33 @@ class ShortDramaTeam
     private Agent $editorAgent;
 
     public function __construct(
-        string|array $apiKey,
-        array $config = [],
-        ?LoggerInterface $logger = null,
+        private AdapterInterface $textAdapter,
+        private MultimodalInterface $multimodalAdapter,
+        private array $config = [],
+        private ?LoggerInterface $logger = null,
     ) {
         $this->costTracker = new CostTracker();
-        $this->logger = $logger ?? new NullLogger();
+        $this->logger ??= new NullLogger();
 
-        $adapter = is_string($apiKey)
-            ? AdapterFactory::openai($apiKey)
-            : AdapterFactory::create($apiKey);
-
-        $this->writerAgent = new Agent($adapter, array_merge([
+        $this->writerAgent = new Agent($this->textAdapter, array_merge([
             'model' => 'gpt-4',
-        ], $config['writer'] ?? []));
+        ], $this->config['writer'] ?? []));
 
-        $this->artistService = new MultimodalService($adapter);
+        $this->artistService = new MultimodalService(
+            $this->multimodalAdapter,
+            new LocalFileUploader(
+                uploadDir: $this->config['upload_dir'] ?? sys_get_temp_dir(),
+                baseUrl: $this->config['base_url'] ?? 'https://localhost',
+            ),
+            $this->logger,
+        );
 
-        $this->editorAgent = new Agent($adapter, array_merge([
+        $this->editorAgent = new Agent($this->textAdapter, array_merge([
             'model' => 'gpt-4',
-        ], $config['editor'] ?? []));
+        ], $this->config['editor'] ?? []));
 
         $this->agents['编剧'] = $this->writerAgent;
-        $this->agents['画师'] = new Agent($adapter);
+        $this->agents['画师'] = new Agent($this->textAdapter);
         $this->agents['剪辑'] = $this->editorAgent;
 
         $this->logger->debug('ShortDramaTeam 已初始化');

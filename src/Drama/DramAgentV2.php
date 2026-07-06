@@ -64,6 +64,8 @@ final class DramAgentV2
             $config['enable_parallel'] ?? true
         );
         $this->config = array_merge([
+            'memory' => $this->memory,
+            'cost_tracker' => $this->costTracker,
             'scenes' => 5,
             'duration_per_scene' => 10,
             'style' => 'cinematic',
@@ -79,6 +81,16 @@ final class DramAgentV2
             'background_music' => null,
             'max_image_size' => '1024x1024',
         ], $config);
+    }
+
+    public function memory(): ?AgentMemory
+    {
+        return $this->memory;
+    }
+
+    public function costTracker(): ?CostTracker
+    {
+        return $this->costTracker;
     }
 
     /**
@@ -384,7 +396,7 @@ final class DramAgentV2
 
         $parts = array_chunk($sentences, (int) ceil(count($sentences) / $sceneCount));
 
-        return array_map(function ($part, $index) use ($sceneCount) {
+        return array_map(function ($part, $index) {
             $text = implode('。', $part);
             return [
                 'original' => $text,

@@ -30,7 +30,7 @@ use Nyholm\Psr7\Request;
  * ]);
  * ```
  */
-readonly class TencentAdapter implements AdapterInterface
+final class TencentAdapter implements AdapterInterface
 {
     use StreamHelper;
 
@@ -39,7 +39,6 @@ readonly class TencentAdapter implements AdapterInterface
     private const VERSION = '2023-09-01';
     private const REGION = 'ap-guangzhou';
     private const DEFAULT_MODEL = 'hunyuan-lite';
-    private const DEFAULT_TIMEOUT = 60;
     private const ALGORITHM = 'TC3-HMAC-SHA256';
 
     private ?ApiKey $apiKey;

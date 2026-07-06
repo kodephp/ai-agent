@@ -26,8 +26,9 @@ final class SSEEmitter
     private int $id = 0;
     private int $timeout = 60;
 
-    public function __construct()
+    public function __construct(int $timeout = 60)
     {
+        $this->timeout = $timeout;
         $this->start();
     }
 
@@ -47,6 +48,10 @@ final class SSEEmitter
             header('Cache-Control: no-cache');
             header('Connection: keep-alive');
             header('X-Accel-Buffering: no');
+        }
+
+        if (function_exists('set_time_limit')) {
+            set_time_limit($this->timeout);
         }
 
         if (ob_get_level() > 0) {

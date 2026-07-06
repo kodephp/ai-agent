@@ -41,6 +41,11 @@ final class AgentMemory
         ];
 
         $this->shortTermMemory[$key] = $entry;
+
+        if (count($this->shortTermMemory) > self::MAX_MEMORY_SIZE) {
+            array_shift($this->shortTermMemory);
+        }
+
         $this->persist();
 
         return $this;

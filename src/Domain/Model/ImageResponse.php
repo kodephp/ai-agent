@@ -27,7 +27,7 @@ namespace Kode\AiAgent\Domain\Model;
  * echo $response->toJson();
  * ```
  */
-readonly class ImageResponse
+final readonly class ImageResponse
 {
     public function __construct(
         public array $images = [],
@@ -156,7 +156,7 @@ readonly class ImageResponse
     public function with(array $values): static
     {
         $data = get_object_vars($this);
-        return new self(
+        return new static(
             images: $values['images'] ?? $data['images'],
             revisedPrompt: $values['revisedPrompt'] ?? $values['revised_prompt'] ?? $data['revisedPrompt'],
             duration: $values['duration'] ?? $data['duration'],

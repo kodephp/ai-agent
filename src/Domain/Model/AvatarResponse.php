@@ -28,7 +28,7 @@ namespace Kode\AiAgent\Domain\Model;
  * echo $response->toJson();
  * ```
  */
-readonly class AvatarResponse
+final readonly class AvatarResponse
 {
     public function __construct(
         public string $video = '',
@@ -179,7 +179,7 @@ readonly class AvatarResponse
     public function with(array $values): static
     {
         $data = get_object_vars($this);
-        return new self(
+        return new static(
             video: $values['video'] ?? $data['video'],
             avatarId: $values['avatarId'] ?? $values['avatar_id'] ?? $data['avatarId'],
             voiceId: $values['voiceId'] ?? $values['voice_id'] ?? $data['voiceId'],

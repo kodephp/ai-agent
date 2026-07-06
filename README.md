@@ -4,7 +4,7 @@
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-8892BF.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/version-2.17.0-green.svg)](https://github.com/kodephp/ai-agent)
+[![Version](https://img.shields.io/badge/version-2.18.0-green.svg)](https://github.com/kodephp/ai-agent)
 
 ## 特性
 
@@ -736,7 +736,7 @@ class MyTools
     #[Tool(name: 'search', description: '搜索网络')]
     public function search(string $query): array
     {
-        return ['results' => ["关于 {$query} 的结果..."];
+        return ['results' => ["关于 {$query} 的结果..."]];
     }
 }
 
@@ -1769,7 +1769,7 @@ src/
 
 ## 环境要求
 
-- PHP 8.2+
+- PHP 8.3+
 - Composer 2.0+
 
 ## 许可证
@@ -1845,8 +1845,8 @@ $storyBoard = $agent->parseScript('剧本内容...', [
     'style' => 'cinematic',
 ]);
 
-// 2. 生成场景图像（支持并行）
-$scenes = $agent->generateSceneImages($storyBoard, [
+// 2. 生成增强场景（含图像，支持并行）
+$scenes = $agent->generateEnhancedScenes($storyBoard, [
     'image_size' => '1920x1080',
 ]);
 
@@ -1855,29 +1855,55 @@ $videos = $agent->generateSceneVideos($scenes, [
     'video_resolution' => '1080p',
 ]);
 
-// 4. 合成最终视频
-$finalVideo = $agent->composeFinalVideo($videos, [
+// 4. 合成最终视频（使用 VideoComposerV3）
+$composer = new \Kode\AiAgent\Video\VideoComposerV3(
+    logger: null,
+    concurrency: 4,
+    config: ['output_dir' => 'var/drama/output']
+);
+$composer->addSceneVideos($videos);
+$result = $composer->compose([
     'transition' => 'fade',
     'background_music' => '/path/to/music.mp3',
+    'music_volume' => 0.3,
 ]);
+$finalVideo = $result['output'];
 ```
 
-### 带数字人的短剧
+### 为短剧添加数字人讲解
 
 ```php
-// 生成包含数字人讲解的短剧
-$result = $agent->generateWithAvatar(
-    script: '今天给大家介绍一款新产品...',
-    avatarOptions: [
-        'avatar_id' => 'default-female',
-        'voice_id' => 'voice-female-zh',
-        'language' => 'zh-CN',
-    ],
-    dramaOptions: [
-        'scenes' => 5,
-        'style' => 'modern',
-    ]
+use Kode\AiAgent\Support\Facade\Multimodal;
+
+// 1. 先生成短剧
+$result = $agent->generate('今天给大家介绍一款新产品...', [
+    'scenes' => 5,
+    'style' => 'modern',
+]);
+
+// 2. 生成数字人讲解视频
+$avatarResponse = Multimodal::generateAvatar('欢迎观看本期产品评测...', [
+    'avatar_id' => 'default-female',
+    'voice_id' => 'voice-female-zh',
+    'language' => 'zh-CN',
+    'resolution' => '1080p',
+]);
+
+// 3. 将数字人视频与短剧合成（作为开场/结尾）
+$composer = new \Kode\AiAgent\Video\VideoComposerV3(
+    logger: null,
+    concurrency: 4,
+    config: ['output_dir' => 'var/drama/output']
 );
+
+$composer->addSceneVideos($result->sceneVideos);
+$composer->setOpening(\Kode\AiAgent\Drama\FrameVideo::opening(
+    $avatarResponse->video(),
+    ['duration' => $avatarResponse->videoDuration(), 'title' => '产品讲解']
+));
+
+$final = $composer->compose();
+echo "最终视频: {$final['output']}";
 ```
 
 ### 视频合成
@@ -1893,8 +1919,11 @@ $composer = new VideoComposerV3(
     config: ['output_dir' => 'var/drama/output']
 );
 
+// 添加场景视频
+$composer->addSceneVideos($sceneVideos);
+
 // 合成视频
-$output = $composer->compose($sceneVideos, [
+$output = $composer->compose([
     'transition' => 'fade',
     'background_music' => '/path/to/music.mp3',
     'music_volume' => 0.3,

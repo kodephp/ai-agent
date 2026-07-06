@@ -10,13 +10,13 @@
 4. [记忆系统（AgentMemory）](#4-记忆系统-agentmemory)
 5. [重试策略（RetryStrategy）](#5-重试策略-retrystrategy)
 6. [协程安全编程](#6-协程安全编程)
-7. [短剧生成系统（DramAgent）](#7-短剧生成系统-dramagent)
-8. [日志系统（Monolog）](#8-日志系统-monolog-集成)
-9. [并行处理（Fiber/协程）](#9-并行处理-fiber协程)
-10. [进程管理](#10-进程管理)
-11. [视频合成](#11-视频合成)
-12. [完整使用案例](#12-完整使用案例)
-13. [最佳实践](#13-最佳实践)
+7. [完整使用案例](#7-完整使用案例)
+8. [最佳实践](#8-最佳实践)
+9. [短剧生成系统（DramAgentV2）](#9-短剧生成系统-dramagentv2)
+10. [日志系统（Monolog）](#10-日志系统-monolog-集成)
+11. [并行处理（Fiber/协程）](#11-并行处理-fiber协程)
+12. [进程管理](#12-进程管理)
+13. [视频合成](#13-视频合成)
 
 ---
 
@@ -43,18 +43,18 @@ use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 
 // 创建主管 Agent（负责协调和综合）
 $supervisor = new SupervisorAgent(
-    AdapterFactory::openai('sk-chief-xxx', ['model' => 'gpt-4o'])
+    new Agent(AdapterFactory::openai('sk-chief-xxx', ['model' => 'gpt-4o']))
 );
 
 // 注册专门的 Agent
 $supervisor->register('analyst',
-    AdapterFactory::deepseek('sk-analyst-xxx', ['model' => 'deepseek-chat']),
+    new Agent(AdapterFactory::deepseek('sk-analyst-xxx', ['model' => 'deepseek-chat'])),
     '负责技术分析和调研'
 )->register('executor',
-    AdapterFactory::anthropic('sk-exec-xxx', ['model' => 'claude-3-5-sonnet']),
+    new Agent(AdapterFactory::anthropic('sk-exec-xxx', ['model' => 'claude-3-5-sonnet'])),
     '负责代码实现'
 )->register('reviewer',
-    AdapterFactory::openai('sk-reviewer-xxx', ['model' => 'gpt-4o']),
+    new Agent(AdapterFactory::openai('sk-reviewer-xxx', ['model' => 'gpt-4o'])),
     '负责代码审核'
 );
 
@@ -438,12 +438,12 @@ $memory = AgentMemory::create(true);
 
 // 创建团队
 $team = new SupervisorAgent(
-    AdapterFactory::openai('sk-lead-xxx', ['model' => 'gpt-4o'])
+    new Agent(AdapterFactory::openai('sk-lead-xxx', ['model' => 'gpt-4o']))
 );
 
-$team->register('architect', AdapterFactory::openai('sk-xxx'), '架构师')
-     ->register('backend', AdapterFactory::deepseek('sk-xxx'), '后端工程师')
-     ->register('frontend', AdapterFactory::anthropic('sk-xxx'), '前端工程师');
+$team->register('architect', new Agent(AdapterFactory::openai('sk-xxx')), '架构师')
+     ->register('backend', new Agent(AdapterFactory::deepseek('sk-xxx')), '后端工程师')
+     ->register('frontend', new Agent(AdapterFactory::anthropic('sk-xxx')), '前端工程师');
 
 // 存储项目上下文
 $memory->memorize('project', [
@@ -519,36 +519,36 @@ $supervisor->register('summarizer',
 
 ---
 
-**版本**: v1.8.0
-**更新日期**: 2026-03-24
+**版本**: v2.18.0
+**更新日期**: 2026-07-06
 **维护者**: KodePHP Team
 
 ---
 
-## 9. 短剧生成系统（DramAgent）
+## 9. 短剧生成系统（DramAgentV2）
 
 ### 9.1 概述
 
-DramAgent 提供完整的短剧生成工作流，支持一键生成短视频：
+DramAgentV2 提供完整的短剧生成工作流，支持一键生成短视频：
 
 1. **剧本解析**：将剧本拆分为多个场景
 2. **场景图像生成**：使用 AI 生成每个场景的图像
 3. **图像转视频**：将静态图像转换为动态视频
-4. **数字人合成**：添加数字人口播内容
+4. **开场/结尾/转场**：自动添加片头片尾与转场效果
 5. **视频合成**：将多个视频片段合并为完整短剧
 
 ### 9.2 基本使用
 
 ```php
-use Kode\AiAgent\Drama\DramAgent;
+use Kode\AiAgent\Drama\DramAgentV2;
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 use Kode\AiAgent\Log\LogManager;
 
 // 初始化日志
 LogManager::init(['env' => 'dev']);
 
-// 创建 DramAgent
-$agent = new DramAgent(
+// 创建 DramAgentV2（需传入支持 MultimodalInterface 的适配器）
+$agent = new DramAgentV2(
     adapter: AdapterFactory::openai('sk-xxx'),
     config: [
         'scenes' => 5,
@@ -564,6 +564,7 @@ $result = $agent->generate('在一个阳光明媚的早晨，小明和小红相�
 
 echo "视频地址: {$result->video}\n";
 echo "总时长: {$result->duration}秒\n";
+echo "场景数量: {$result->scenesCount()}\n";
 ```
 
 ### 9.3 分步生成
@@ -575,33 +576,47 @@ $storyBoard = $agent->parseScript($script, [
     'style' => 'cinematic',
 ]);
 
-// 2. 生成场景图像
-$scenes = $agent->generateSceneImages($storyBoard);
+// 2. 生成增强场景（含图像，支持并行）
+$scenes = $agent->generateEnhancedScenes($storyBoard);
 
 // 3. 生成场景视频
 $videos = $agent->generateSceneVideos($scenes, [
     'video_resolution' => '1080p',
 ]);
 
-// 4. 合成最终视频
-$finalVideo = $agent->composeFinalVideo($videos, [
+// 4. 合成最终视频（使用 VideoComposerV3）
+$composer = new \Kode\AiAgent\Video\VideoComposerV3(
+    logger: null,
+    concurrency: 4,
+    config: ['output_dir' => 'var/drama/output']
+);
+$composer->addSceneVideos($videos);
+$result = $composer->compose([
     'transition' => 'fade',
     'background_music' => '/path/to/music.mp3',
+    'music_volume' => 0.3,
 ]);
+$finalVideo = $result['output'];
 ```
 
-### 9.4 带数字人的短剧
+### 9.4 带参考图/参考视频的短剧
 
 ```php
-$result = $agent->generateWithAvatar(
-    script: '今天给大家介绍一款新产品...',
-    avatarOptions: [
-        'avatar_id' => 'default-female',
-        'voice_id' => 'voice-female-zh',
-        'language' => 'zh-CN',
-    ],
-    dramaOptions: [
+$result = $agent->generate(
+    script: '在一个古风庭院里，桃花树下...',
+    options: [
         'scenes' => 5,
+        'reference_image' => 'https://example.com/ancient-style.jpg',
+        'reference_video' => 'https://example.com/motion-ref.mp4',
+        'opening' => [
+            'title' => '精彩故事即将开始',
+            'duration' => 5,
+        ],
+        'closing' => [
+            'text' => '感谢观看',
+            'duration' => 10,
+        ],
+        'background_music' => '/path/to/music.mp3',
     ]
 );
 ```
@@ -792,12 +807,14 @@ $output = $composer->compose($sceneVideos, [
 ### 13.2 视频合并
 
 ```php
+use Kode\AiAgent\Video\VideoMerger;
+
 // 合并多个视频
-$output = $composer->concatenate([
-    '/path/to/video1.mp4',
-    '/path/to/video2.mp4',
-    '/path/to/video3.mp4',
-], ['format' => 'mp4']);
+$merger = new VideoMerger();
+$merger->addSegment('/path/to/video1.mp4');
+$merger->addSegment('/path/to/video2.mp4');
+$merger->addSegment('/path/to/video3.mp4');
+$output = $merger->merge();
 ```
 
 ### 13.3 视频分段

@@ -157,9 +157,11 @@ class RoleAgentTeam implements AgentTeamInterface
     public function pipeline(callable ...$stages): ResponseInterface
     {
         $context = [];
+        $lastResult = null;
 
         foreach ($stages as $index => $stage) {
             $result = $stage($context);
+            $lastResult = $result;
             $context["stage_{$index}_result"] = $result;
 
             if ($result instanceof ResponseInterface) {
@@ -169,7 +171,7 @@ class RoleAgentTeam implements AgentTeamInterface
             }
         }
 
-        return $context["stage_{$index}_result"] ?? throw new \RuntimeException('Pipeline produced no result');
+        return $lastResult ?? throw new \RuntimeException('Pipeline produced no result');
     }
 
     public function on(string $event, callable $hook): self

@@ -16,7 +16,7 @@ namespace Kode\AiAgent\Domain\ValueObject;
  * $config = ModelConfig::create('gpt-4', temperature: 0.7);
  * ```
  */
-readonly class ModelConfig
+final readonly class ModelConfig
 {
     public function __construct(
         public string $model = 'gpt-4o',
@@ -71,6 +71,6 @@ readonly class ModelConfig
     public function with(array $values): static
     {
         $data = get_object_vars($this);
-        return new self(...array_merge($data, $values));
+        return new static(...array_merge($data, $values));
     }
 }

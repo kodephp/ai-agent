@@ -60,7 +60,7 @@ final class CapabilityAwareStrategy implements RoutingStrategyInterface
         usort($filtered, static fn(ExpertInterface $a, ExpertInterface $b) => $a->priority() <=> $b->priority());
 
         // 5. 取优先级最高的一批，按权重随机选一个
-        $topPriority = $filtered[0]->priority() ?? 0;
+        $topPriority = $filtered[0]->priority();
         $topTier = array_values(array_filter(
             $filtered,
             static fn(ExpertInterface $e) => $e->priority() === $topPriority

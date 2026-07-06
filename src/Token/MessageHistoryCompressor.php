@@ -34,7 +34,7 @@ final class MessageHistoryCompressor
         if ($messages === [] || $maxTokens <= 0) {
             return $keepSystem ? array_values(array_filter(
                 $messages,
-                static fn($m) => ($m['role'] ?? '') === 'system'
+                static fn($m) => $m['role'] === 'system'
             )) : [];
         }
 
@@ -42,7 +42,7 @@ final class MessageHistoryCompressor
         $otherMessages = [];
 
         foreach ($messages as $message) {
-            if (($message['role'] ?? '') === 'system' && $keepSystem) {
+            if ($message['role'] === 'system' && $keepSystem) {
                 $systemMessages[] = $message;
             } else {
                 $otherMessages[] = $message;
@@ -62,7 +62,7 @@ final class MessageHistoryCompressor
         $candidates = array_reverse($otherMessages);
 
         foreach ($candidates as $message) {
-            $msgTokens = $this->counter->estimate((string) ($message['content'] ?? '')) + 4;
+            $msgTokens = $this->counter->estimate((string) $message['content']) + 4;
             if ($usedTokens + $msgTokens > $remainingTokens) {
                 break;
             }
@@ -87,7 +87,7 @@ final class MessageHistoryCompressor
         $otherMessages = [];
 
         foreach ($messages as $message) {
-            if (($message['role'] ?? '') === 'system' && $keepSystem) {
+            if ($message['role'] === 'system' && $keepSystem) {
                 $systemMessages[] = $message;
             } else {
                 $otherMessages[] = $message;

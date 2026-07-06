@@ -20,7 +20,7 @@ use Kode\AiAgent\Domain\Contract\MessageInterface;
  * $message = Message::tool('calculator', ['a' => 1, 'b' => 2], '3', 'call-123');
  * ```
  */
-readonly class Message implements MessageInterface
+final readonly class Message implements MessageInterface
 {
     private function __construct(
         private string $role,
@@ -169,7 +169,7 @@ readonly class Message implements MessageInterface
      */
     public function with(array $values): static
     {
-        return new self(
+        return new static(
             $values['role'] ?? $this->role,
             $values['content'] ?? $this->content,
             $values['name'] ?? $this->name,

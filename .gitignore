@@ -13,4 +13,5 @@ composer.lock
 .codeartsdoer
 .arts
 public/uploads
-.phpunit.cache
+.phpunit.cacheCHANGELOG.md
+CHANGELOG.md

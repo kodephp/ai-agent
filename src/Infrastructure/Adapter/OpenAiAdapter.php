@@ -19,7 +19,7 @@ use Nyholm\Psr7\Request;
  * 
  * @package Kode\AiAgent\Infrastructure\Adapter
  */
-readonly class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
+final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
 {
     use StreamHelper;
 
@@ -27,9 +27,6 @@ readonly class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterfac
     private const IMAGES_BASE_URL = 'https://api.openai.com/v1/images/generations';
     private const DEFAULT_MODEL = 'gpt-4o';
     private const DEFAULT_IMAGE_MODEL = 'dall-e-3';
-    private const DEFAULT_TIMEOUT = 30;
-    private const DEFAULT_CONNECT_TIMEOUT = 5;
-    private const STREAM_IDLE_TIMEOUT = 60;
 
     public function __construct(
         private HttpClient $client,

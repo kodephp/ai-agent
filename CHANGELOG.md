@@ -5,6 +5,37 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.19.0] - 2026-07-06
+
+### 修复 - 静态分析与架构健壮性
+
+#### 修复 PHPStan 全部错误
+
+- 修复 `ShortDramaTeam` 构造函数类型错误：改为显式注入 `AdapterInterface` 文本适配器与 `MultimodalInterface` 多模态适配器
+- 将 `Response`、`VideoResponse`、`ImageResponse`、`AvatarResponse`、`Message`、`Prompt`、`ModelConfig` 标记为 `final readonly`，消除 `new static()` 不安全用法
+- 修复 `AgentHub::pipeline()` 与 `RoleAgentTeam::pipeline()` 空阶段时 `$index` 未定义问题
+- 修复 `Agent::extractToolCalls()` 中冗余的 `??` 表达式
+- 修复 `ExecutionContext` 中未使用属性及浮点数严格比较问题
+- 修复 `SupervisorAgent`、`AgentMemory`、`DramAgentV2` 中未读属性/常量问题
+- 修复 `CircuitBreaker::notifyStateChange()` 中冗余的 `is_callable` 检查
+- 修复 `AbstractMultimodalAdapter::generate()` 默认分支 PHPStan 误报
+- 移除 `BaiduAdapter` 中未使用的 `TOKEN_CACHE_KEY` 常量
+
+#### 兼容性
+
+- 新增 `src/Support/Polyfill/NoDiscard.php`，为 PHP 8.3/8.4 提供 `#[\NoDiscard]` 属性兼容
+- `composer.json` 自动加载已包含该 polyfill
+
+#### 文档与规则
+
+- 根据实际功能修正 `README.md`、`docs/ADVANCED_GUIDE.md`、`docs/MULTI_AGENT_TUTORIAL.md`
+- 修正 `.trae/rules/ai-agent.md` 与 `.trae/skills/ai-agent-develop/SKILL.md` 中的过期示例与架构图
+
+#### 测试
+
+- 全量测试：`201 tests, 406 assertions` 全部通过
+- 静态分析：`composer analyse`（PHPStan level 5）零错误
+
 ## [2.18.0] - 2026-07-06
 
 ### 优化 - MOE 架构对比与 Token 消耗平衡
