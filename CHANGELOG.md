@@ -357,6 +357,12 @@
 ### 重构
 - SupervisorAgent 重构使用 AgentTeamTrait
 
+[2.23.0]: https://github.com/kodephp/ai-agent/compare/v2.22.0...v2.23.0
+[2.22.0]: https://github.com/kodephp/ai-agent/compare/v2.21.0...v2.22.0
+[2.21.0]: https://github.com/kodephp/ai-agent/compare/v2.20.0...v2.21.0
+[2.20.0]: https://github.com/kodephp/ai-agent/compare/v2.19.0...v2.20.0
+[2.19.0]: https://github.com/kodephp/ai-agent/compare/v2.18.0...v2.19.0
+[2.18.0]: https://github.com/kodephp/ai-agent/compare/v2.17.0...v2.18.0
 [2.17.0]: https://github.com/kodephp/ai-agent/compare/v2.16.0...v2.17.0
 [2.16.0]: https://github.com/kodephp/ai-agent/compare/v2.15.0...v2.16.0
 [2.15.0]: https://github.com/kodephp/ai-agent/compare/v2.14.0...v2.15.0

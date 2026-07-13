@@ -4,7 +4,7 @@
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-8892BF.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/version-2.18.0-green.svg)](https://github.com/kodephp/ai-agent)
+[![Version](https://img.shields.io/badge/version-2.23.0-green.svg)](https://github.com/kodephp/ai-agent)
 
 ## 特性
 
@@ -1218,7 +1218,7 @@ print_r($voices);
 
 // 获取任务进度
 $progress = ai_get_progress('task-123');
-echo $progress->status();
+echo $progress->status;
 
 // 格式化文件大小
 echo ai_format_file_size(1048576);  // "1.00 MB"
@@ -1817,7 +1817,7 @@ print_r($voices);
 
 // 获取任务进度
 $progress = ai_get_progress('task-123');
-echo $progress->status();
+echo $progress->status;
 
 // 格式化文件大小
 echo ai_format_file_size(1048576);  // "1.00 MB"

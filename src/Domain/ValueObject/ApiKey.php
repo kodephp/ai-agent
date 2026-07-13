@@ -37,7 +37,7 @@ namespace Kode\AiAgent\Domain\ValueObject;
  * ]);
  * ```
  */
-readonly class ApiKey
+final readonly class ApiKey
 {
     private function __construct(
         private array $keys,

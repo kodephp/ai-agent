@@ -68,5 +68,6 @@ final class PromptInjectionDetectorTest extends TestCase
     public function testEnsureSafeAllowsNormalText(): void
     {
         $this->detector->ensureSafe('今天天气真好');
+        $this->addToAssertionCount(1);
     }
 }
