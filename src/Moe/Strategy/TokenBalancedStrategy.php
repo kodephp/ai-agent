@@ -64,7 +64,7 @@ final class TokenBalancedStrategy implements RoutingStrategyInterface
     private function score(ExpertInterface $expert, RoutingContext $context): float
     {
         $model = $expert->model();
-        $text = $context->promptText ?? '';
+        $text = $context->promptText;
         $language = $this->efficiency->detectLanguage($text);
 
         $efficiencyIndex = $this->efficiency->index($model, $language);

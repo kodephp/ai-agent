@@ -18,6 +18,7 @@
 - **多 Agent 协作**：主管 Agent + 分工 Agent，支持流水线、并行、串行模式
 - **短剧生成**：一键生成完整短剧（剧本→场景→文生图→图生视频→合成）
 - **多模态支持**：文本生成图像、文本生成视频、数字人视频生成
+- **统一视频网关**：Seedance 2.0/**2.5**、阿里通义万相、阿里数字人 多供应商自动路由（能力/成本/健康度），失败自动转移
 - **六边形架构**：核心逻辑与外部依赖解耦，依赖方向正确
 - **多平台支持**：OpenAI、Anthropic Claude、DeepSeek、阿里云通义千问、Google Gemini、百度文心一言、腾讯混元、讯飞星火
 - **API Key 轮换**：支持单 Key、双 Key（主备）、多 Key 轮换模式
@@ -1075,6 +1076,84 @@ $video = ai_video('一只猫咪');
 $video = ai_video('一只猫咪', ['resolution' => '1080p']);
 ```
 
+### 统一视频网关（多供应商自动路由）
+
+面向"单 Key 多视频模型"场景，提供与 MOE 同构的**统一视频网关**。
+后台分别配置 Seedance（2.0 / **2.5**）、阿里通义万相（文/图生视频）、阿里数字人 的 Key，
+用户只感知一个网关，内部按**能力 / 成本 / 健康度**自动选择最优供应商，失败时自动转移。
+
+#### 1. 构建网关
+
+```php
+use Kode\AiAgent\Support\Builder\VideoGatewayBuilder;
+
+$gateway = VideoGatewayBuilder::create()
+    ->strategy('capability_aware')                 // 能力感知 | cost_aware | round_robin
+    ->addSeedance(env('VOLC_API_KEY'), ['version' => '2.5'], priority: 10)
+    ->addWanxiang(env('DASHSCOPE_API_KEY'), [], priority: 20)
+    ->addAliyunAvatar(env('DASHSCOPE_API_KEY'), [], priority: 30)
+    ->build();
+
+// 或门面快速配置
+use Kode\AiAgent\Support\Facade\Video;
+
+Video::addSeedance(env('VOLC_API_KEY'), ['version' => '2.5']);
+Video::addWanxiang(env('DASHSCOPE_API_KEY'));
+Video::addAliyunAvatar(env('DASHSCOPE_API_KEY'));
+```
+
+#### 2. 统一调用（自动路由）
+
+```php
+// 文生视频：自动选最合适的视频供应商
+$video = $gateway->textToVideo('一只猫咪在草地上玩耍', [
+    'resolution' => '1080p',
+    // 'preferred_model' => 'seedance-2.5-pro',  // 指定模型
+    // 'max_cost' => 0.10,                           // 成本上限
+]);
+echo $video->firstVideo();
+
+// 图生视频
+$video = $gateway->imageToVideo('/path/to/image.jpg', '让场景动起来');
+
+// 数字人（自动路由到数字人供应商）
+$avatar = $gateway->avatar('大家好，欢迎使用！', [
+    'avatar_id' => 'default-female',
+    'voice_id'  => 'voice-female-zh',
+]);
+echo $avatar->firstVideo();
+```
+
+#### 3. 辅助函数
+
+```php
+$video  = ai_video_text_to_video('一只猫咪', ['preferred_model' => 'seedance-2.5-pro']);
+$video  = ai_video_image_to_video('photo.jpg', '让照片动起来');
+$avatar = ai_video_avatar('大家好', ['avatar_id' => 'default-female']);
+$gateway = ai_video_gateway();   // 获取统一视频网关
+```
+
+#### 4. 使用报告与监控
+
+```php
+$report = $gateway->report();
+// [
+//     'experts' => [ ['id' => 'seedance:seedance-2.5-pro', 'healthy' => true, ...], ... ],
+//     'totals' => ['request_count' => 12, 'success_count' => 12,
+//                  'failed_count' => 0, 'total_cost' => 0.96],
+// ]
+```
+
+#### 供应商能力矩阵
+
+| 供应商 | 类 | 文生视频 | 图生视频 | 数字人 | 版本 |
+|--------|------|---------|---------|--------|------|
+| 字节 Seedance | `SeedanceVideoProvider` | ✅ | ✅ | – | 2.0 / **2.5** |
+| 阿里通义万相 | `WanxiangVideoProvider` | ✅ | ✅ | – | wanx2.1 |
+| 阿里数字人 | `AliyunAvatarProvider` | – | – | ✅ | – |
+
+> 数字人端点可通过 `options['base_url']` 适配具体开通的阿里云数字人服务。
+
 #### 获取平台能力
 
 ```php
@@ -1454,12 +1533,71 @@ $array = $response->toArray();
 // 转换为 JSON
 $json = $response->toJson();
 
-// 直接输出视频 URL
-echo $response;
+ // 直接输出视频 URL
+ echo $response;
+ ```
+
+ ## AI 漫剧导演（DramaDirector，v2.21.0+）
+
+面向"导演视角组合视频"的场景：将剧本拆分为分镜、逐段生成、单段重生成、最后合成成片。
+每段可绑定不同模型（`ModelBinding`），便于后续替换为更优模型。
+
+### 一键生成
+
+```php
+use Kode\AiAgent\Support\Facade\Video;
+use Kode\AiAgent\Support\Facade\Drama;
+
+// 先绑定统一视频网关（已配置各供应商）
+Drama::setGateway(Video::gateway());
+
+// 文本剧本（支持行内指令 @model/@provider/@bg/@bgv/@transition/@duration）
+$result = Drama::generate(<<<SCRIPT
+场景1：清晨的街道，一只猫在散步
+@model seedance-2.5-pro
+@transition fade
+
+场景2：猫遇见一只狗
+@model wanxiang
+@transition dissolve
+SCRIPT);
+
+echo $result->finalVideo;        // 合成后的成片地址
+echo $result->successCount();    // 成功生成的分段数
 ```
 
-## 流式响应
+### 单段重生成与重新合成
 
+```php
+// 只调整第 1 段（新提示词 / 新模型），其余不变
+Drama::regenerateSegment(0, [
+    'prompt' => '清晨的街道，阳光洒在石板路上',
+    'model'  => new \Kode\AiAgent\Drama\Director\ModelBinding('seedance', 'seedance-2.5-pro'),
+]);
+
+// 改完任意分段后重新合成
+$result = Drama::compose();
+echo $result->finalVideo;
+```
+
+### 结构化剧本与模型继承
+
+```php
+$result = Drama::generate([
+    ['title' => '开场', 'prompt' => '城市夜景', 'model' => 'seedance-2.5-pro'],
+    ['prompt' => '海边日出', 'duration' => 8],   // 未指定 model 时继承上一段
+]);
+```
+
+要点：
+
+- 文本剧本按空行分块，行内 `@指令` 控制片段级参数；结构化数组直接映射。
+- 未显式指定 `model` 的分段会**继承上一段的模型绑定**。
+- 提供 `background_video` 的分段直接复用为背景片段（不再调用生成）。
+- 生成某分段失败时自动回退到其它供应商；若全部失败，`compose()` 会抛出异常。
+
+ ## 流式响应
+ 
 ### 同步流式
 
 ```php

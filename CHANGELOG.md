@@ -5,6 +5,77 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.21.0] - 2026-07-13
+
+### 新增 - AI 漫剧导演（DramaDirector）
+
+面向"导演视角组合视频"的场景，新增 **AI 漫剧导演** 模块：将剧本拆分为分镜、逐段生成、
+可单段重生成、最后合成成片。每段可绑定不同模型（ModelBinding），便于后续替换为更优模型。
+
+#### 核心模块（src/Drama/Director/）
+
+- `ScriptSplitter`：剧本拆分器。支持纯文本（按空行分块 + 行内指令
+  `@title/@model/@provider/@bg/@bgv/@transition/@duration`）与结构化数组两种输入；
+  片段可继承上一段的模型绑定。
+- `DramaSegment`：分镜值对象（提示词 / 转场 / 背景图 / 背景视频 / 模型 / 时长 / 状态），
+  通过 `with()` 不可变更新，便于单段调整。
+- `ModelBinding`：每段模型绑定（provider + model），`toOptions()` 直接驱动统一视频网关路由。
+- `DramaDirector`：`generate()` 一键流程（拆分→逐段生成→合成）、
+  `regenerateSegment()` 单段重生成、`compose()` 重新合成；支持背景视频复用、供应商失败回退。
+- `DramaResult`：结果值对象，含 `finalVideo`、`stats()`、`toArray()`。
+
+#### 门面与 Helper
+
+- 新增 `Kode\AiAgent\Support\Facade\Drama` 门面（`Drama::setGateway()` /
+  `Drama::generate()` / `Drama::regenerateSegment()` / `Drama::compose()`）。
+- 新增 helper：`ai_drama_director($gateway)`、`ai_drama_generate($script, $gateway, $options)`。
+
+#### 其他
+
+- 将 `TransitionType` 枚举抽离为独立文件 `src/Drama/TransitionType.php`（满足 PSR-4 自动加载）。
+- 新增 `tests/DramaDirectorTest.php`（8 用例：拆分、生成、单段重生成、背景复用、失败回退、合成校验）。
+
+## [2.20.0] - 2026-07-13
+
+### 新增 - 统一视频网关（万和水岸多供应商视频中台）
+
+面向"单 Key 多视频模型"场景，新增与 MOE 同构的**统一视频网关**，
+在 Seedance、通义万相、数字人 等国内外供应商之间按能力 / 成本 / 健康度自动路由，失败时自动转移。
+
+#### 核心模块
+
+- `Kode\AiAgent\Domain\Contract\VideoProviderInterface` - 视频供应商统一契约
+- `Kode\AiAgent\VideoGateway\VideoGateway` - 统一网关入口
+- `Kode\AiAgent\VideoGateway\VideoRouter` - 视频路由器（能力过滤 + 失败自动转移）
+- `Kode\AiAgent\VideoGateway\VideoExpert` - 视频专家（能力/优先级/权重/健康度）
+- `Kode\AiAgent\VideoGateway\VideoPriceTable` - 视频生成价格表（成本估算/报表）
+- `Kode\AiAgent\VideoGateway\Strategy\{CapabilityAware,CostAware,RoundRobin}VideoStrategy` - 路由策略
+- `Kode\AiAgent\Support\Builder\VideoGatewayBuilder` - 网关构建器
+- `Kode\AiAgent\Support\Facade\Video` - 静态门面
+
+#### 新增供应商
+
+- `Kode\AiAgent\VideoGateway\Provider\SeedanceVideoProvider` - 字节跳动 Seedance（兼容 **2.0 / 2.5**）
+- `Kode\AiAgent\VideoGateway\Provider\WanxiangVideoProvider` - 阿里通义万相文/图生视频（wanx2.1）
+- `Kode\AiAgent\VideoGateway\Provider\AliyunAvatarProvider` - 阿里数字人视频生成
+
+#### 升级
+
+- `SeedanceAdapter` / `SeedanceService` 支持 Seedance **2.5**（`seedance-2.5-pro/lite`），
+  并可通过 `version`(2.0/2.5) + `tier`(pro/lite) 或显式 `model` 配置版本
+
+#### 新增辅助函数
+
+- `ai_video_gateway()` - 获取统一视频网关
+- `ai_video_text_to_video()` - 统一文生视频
+- `ai_video_image_to_video()` - 统一图生视频
+- `ai_video_avatar()` - 统一数字人视频
+
+### 测试
+
+- 新增 `tests/VideoGatewayTest.php`（路由/失败转移/成本策略/报表）
+- 新增 `tests/VideoProviderTest.php`（版本解析/能力/成本）
+
 ## [2.19.0] - 2026-07-06
 
 ### 修复 - 静态分析与架构健壮性

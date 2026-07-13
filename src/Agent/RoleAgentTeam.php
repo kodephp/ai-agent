@@ -218,7 +218,7 @@ class RoleAgentTeam implements AgentTeamInterface
         foreach ($this->routes as $pattern => $role) {
             $keywords = array_filter(array_map('trim', explode('|', $pattern)));
             foreach ($keywords as $keyword) {
-                if ($keyword !== '' && str_contains($normalizedTask, $keyword)) {
+                if (str_contains($normalizedTask, $keyword)) {
                     return $role;
                 }
             }

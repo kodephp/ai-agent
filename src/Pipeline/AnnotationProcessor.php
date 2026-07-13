@@ -221,11 +221,9 @@ final class AnnotationProcessor
         }
 
         // 检查状态码
-        if (method_exists($e, 'getCode')) {
-            $code = $e->getCode();
-            if (in_array($code, $attr->retryOn, true)) {
-                return true;
-            }
+        $code = $e->getCode();
+        if (in_array($code, $attr->retryOn, true)) {
+            return true;
         }
 
         // 网络错误重试

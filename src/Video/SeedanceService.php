@@ -42,7 +42,7 @@ final class SeedanceService
 {
     private SeedanceAdapter $adapter;
     private array $defaultOptions;
-    private ?object $logger;
+    private object $logger;
 
     public function __construct(
         string $apiKey,
@@ -59,6 +59,9 @@ final class SeedanceService
             'duration' => $options['duration'] ?? 10,
             'aspect_ratio' => $options['aspect_ratio'] ?? '16:9',
             'fps' => $options['fps'] ?? 30,
+            'version' => $options['version'] ?? '2.0',
+            'tier' => $options['tier'] ?? 'pro',
+            'model' => $options['model'] ?? '',
         ];
 
         $this->logger = $logger ?? LogManager::channel('seedance');
@@ -71,7 +74,7 @@ final class SeedanceService
 
     public function textToVideo(string $prompt, array $options = []): VideoResponse
     {
-        $this->logger?->info('文生视频开始', [
+        $this->logger->info('文生视频开始', [
             'prompt' => substr($prompt, 0, 50),
             'resolution' => $options['resolution'] ?? $this->defaultOptions['resolution'],
         ]);
@@ -81,14 +84,14 @@ final class SeedanceService
         try {
             $result = $this->adapter->generateVideo($prompt, $options);
 
-            $this->logger?->info('文生视频完成', [
+            $this->logger->info('文生视频完成', [
                 'video_url' => $result->firstVideo(),
                 'duration' => $result->duration(),
             ]);
 
             return $result;
         } catch (\Throwable $e) {
-            $this->logger?->error('文生视频失败', [
+            $this->logger->error('文生视频失败', [
                 'error' => $e->getMessage(),
             ]);
             throw $e;
@@ -97,7 +100,7 @@ final class SeedanceService
 
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {
-        $this->logger?->info('图生视频开始', [
+        $this->logger->info('图生视频开始', [
             'image' => is_url($image) ? $image : basename($image),
             'has_prompt' => $prompt !== null,
             'resolution' => $options['resolution'] ?? $this->defaultOptions['resolution'],
@@ -108,14 +111,14 @@ final class SeedanceService
         try {
             $result = $this->adapter->imageToVideo($image, $prompt, $options);
 
-            $this->logger?->info('图生视频完成', [
+            $this->logger->info('图生视频完成', [
                 'video_url' => $result->firstVideo(),
                 'duration' => $result->duration(),
             ]);
 
             return $result;
         } catch (\Throwable $e) {
-            $this->logger?->error('图生视频失败', [
+            $this->logger->error('图生视频失败', [
                 'error' => $e->getMessage(),
             ]);
             throw $e;
@@ -124,7 +127,7 @@ final class SeedanceService
 
     public function multiShot(string $prompt, int $shots = 3, array $options = []): VideoResponse
     {
-        $this->logger?->info('多镜头视频开始', [
+        $this->logger->info('多镜头视频开始', [
             'prompt' => substr($prompt, 0, 50),
             'shots' => $shots,
             'resolution' => $options['resolution'] ?? $this->defaultOptions['resolution'],
@@ -135,14 +138,14 @@ final class SeedanceService
         try {
             $result = $this->adapter->generateMultiShot($prompt, $shots, $options);
 
-            $this->logger?->info('多镜头视频完成', [
+            $this->logger->info('多镜头视频完成', [
                 'video_count' => count($result->videos()),
                 'duration' => $result->duration(),
             ]);
 
             return $result;
         } catch (\Throwable $e) {
-            $this->logger?->error('多镜头视频失败', [
+            $this->logger->error('多镜头视频失败', [
                 'error' => $e->getMessage(),
             ]);
             throw $e;
@@ -151,7 +154,7 @@ final class SeedanceService
 
     public function batchTextToVideo(array $prompts, array $options = []): array
     {
-        $this->logger?->info('批量文生视频开始', [
+        $this->logger->info('批量文生视频开始', [
             'count' => count($prompts),
         ]);
 
@@ -173,7 +176,7 @@ final class SeedanceService
         }
 
         $successCount = count(array_filter($results, fn($r) => $r['success']));
-        $this->logger?->info('批量文生视频完成', [
+        $this->logger->info('批量文生视频完成', [
             'total' => count($prompts),
             'success' => $successCount,
             'failed' => count($prompts) - $successCount,
@@ -184,7 +187,7 @@ final class SeedanceService
 
     public function parallelTextToVideo(array $prompts, array $options = [], int $concurrency = 3): array
     {
-        $this->logger?->info('并发文生视频开始', [
+        $this->logger->info('并发文生视频开始', [
             'count' => count($prompts),
             'concurrency' => $concurrency,
         ]);
@@ -212,7 +215,7 @@ final class SeedanceService
         }
 
         $successCount = count(array_filter($results, fn($r) => $r['success']));
-        $this->logger?->info('并发文生视频完成', [
+        $this->logger->info('并发文生视频完成', [
             'total' => count($prompts),
             'success' => $successCount,
             'failed' => count($prompts) - $successCount,
@@ -223,7 +226,7 @@ final class SeedanceService
 
     public function batchImageToVideo(array $images, array $options = []): array
     {
-        $this->logger?->info('批量图生视频开始', [
+        $this->logger->info('批量图生视频开始', [
             'count' => count($images),
         ]);
 
@@ -250,7 +253,7 @@ final class SeedanceService
         }
 
         $successCount = count(array_filter($results, fn($r) => $r['success']));
-        $this->logger?->info('批量图生视频完成', [
+        $this->logger->info('批量图生视频完成', [
             'total' => count($images),
             'success' => $successCount,
             'failed' => count($images) - $successCount,
@@ -306,6 +309,33 @@ final class SeedanceService
         return $this;
     }
 
+    /**
+     * 设置 Seedance 模型版本（2.0 / 2.5）
+     */
+    public function setVersion(string $version): self
+    {
+        $this->defaultOptions['version'] = $version;
+        return $this;
+    }
+
+    /**
+     * 设置模型规格（pro / lite）
+     */
+    public function setTier(string $tier): self
+    {
+        $this->defaultOptions['tier'] = $tier;
+        return $this;
+    }
+
+    /**
+     * 设置完整模型名称（优先级高于 version/tier）
+     */
+    public function setModel(string $model): self
+    {
+        $this->defaultOptions['model'] = $model;
+        return $this;
+    }
+
     public function getSupportedResolutions(): array
     {
         return SeedanceAdapter::SUPPORTED_RESOLUTIONS;
@@ -323,7 +353,14 @@ final class SeedanceService
 
     private function mergeOptions(array $options): array
     {
-        return array_merge($this->defaultOptions, $options);
+        $merged = array_merge($this->defaultOptions, $options);
+
+        // 空 model 不向下传递，避免覆盖 version/tier 解析
+        if (($merged['model'] ?? '') === '') {
+            unset($merged['model']);
+        }
+
+        return $merged;
     }
 }
 

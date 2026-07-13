@@ -11,12 +11,13 @@ use Kode\HttpClient\HttpClient;
 use Nyholm\Psr7\Request;
 
 /**
- * Seedance 2.0 适配器
+ * Seedance 视频适配器
  *
- * 字节跳动 Seedance 2.0 AI 视频生成 API 适配器。
+ * 字节跳动 Seedance AI 视频生成 API 适配器（兼容 2.0 与 2.5）。
  * 支持文生视频、图生视频、多镜头叙事，原生音频生成。
  *
  * 特性：
+ * - 版本可配置：2.0（seedance-2.0-pro/lite）、2.5（seedance-2.5-pro/lite）
  * - 720P / 1080P 分辨率（可配置）
  * - 最长 15 秒视频
  * - 6 种画幅比例
@@ -53,6 +54,25 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
     private const DEFAULT_FPS = 24;
 
     public const SUPPORTED_RESOLUTIONS = ['720p', '1080p'];
+
+    /**
+     * 支持的模型版本
+     * - 2.0：seedance-2.0-pro / seedance-2.0-lite（稳定版）
+     * - 2.5：seedance-2.5-pro / seedance-2.5-lite（最新版，更强运动一致性）
+     */
+    public const SUPPORTED_VERSIONS = ['2.0', '2.5'];
+
+    public const VERSION_MODELS = [
+        '2.0' => ['pro' => 'seedance-2.0-pro', 'lite' => 'seedance-2.0-lite'],
+        '2.5' => ['pro' => 'seedance-2.5-pro', 'lite' => 'seedance-2.5-lite'],
+    ];
+
+    public const SUPPORTED_MODELS = [
+        'seedance-2.0-pro',
+        'seedance-2.0-lite',
+        'seedance-2.5-pro',
+        'seedance-2.5-lite',
+    ];
 
     public const ASPECT_RATIOS = [
         '16:9' => [1920, 1080],
@@ -161,7 +181,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         $resolution = $this->resolveResolution($options['resolution'] ?? self::DEFAULT_RESOLUTION);
 
         $body = [
-            'model' => $options['model'] ?? self::DEFAULT_MODEL,
+            'model' => $this->resolveModel($options),
             'input' => [
                 'prompt' => $prompt,
             ],
@@ -228,7 +248,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         }
 
         $body = [
-            'model' => $options['model'] ?? self::DEFAULT_MODEL,
+            'model' => $this->resolveModel($options),
             'input' => $input,
             'parameters' => [
                 'duration' => $options['duration'] ?? self::DEFAULT_DURATION,
@@ -288,7 +308,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         $resolution = $this->resolveResolution($options['resolution'] ?? self::DEFAULT_RESOLUTION);
 
         $body = [
-            'model' => $options['model'] ?? self::DEFAULT_MODEL,
+            'model' => $this->resolveModel($options),
             'input' => [
                 'prompt' => $prompt,
             ],
@@ -372,6 +392,42 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
     public function getSupportedResolutions(): array
     {
         return self::SUPPORTED_RESOLUTIONS;
+    }
+
+    /**
+     * 获取支持的模型版本（2.0 / 2.5）
+     */
+    public function getSupportedVersions(): array
+    {
+        return self::SUPPORTED_VERSIONS;
+    }
+
+    /**
+     * 获取支持的模型列表
+     */
+    public function getSupportedModels(): array
+    {
+        return self::SUPPORTED_MODELS;
+    }
+
+    /**
+     * 解析模型名称
+     *
+     * 解析优先级：options['model'] 显式指定 > version + tier 组合
+     * 例如 version=2.5, tier=pro => seedance-2.5-pro
+     */
+    private function resolveModel(array $options): string
+    {
+        if (isset($options['model']) && is_string($options['model']) && $options['model'] !== '') {
+            return in_array($options['model'], self::SUPPORTED_MODELS, true)
+                ? $options['model']
+                : self::DEFAULT_MODEL;
+        }
+
+        $version = $options['version'] ?? '2.0';
+        $tier = $options['tier'] ?? 'pro';
+
+        return self::VERSION_MODELS[$version][$tier] ?? self::DEFAULT_MODEL;
     }
 
     private function resolveResolution(string $resolution): string

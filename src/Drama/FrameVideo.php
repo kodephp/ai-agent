@@ -281,7 +281,7 @@ final class FrameVideoManager
      */
     public function getOpeningDuration(): int
     {
-        return $this->opening?->duration ?? 0;
+        return $this->opening->duration;
     }
 
     /**
@@ -289,7 +289,7 @@ final class FrameVideoManager
      */
     public function getClosingDuration(): int
     {
-        return $this->closing?->duration ?? 0;
+        return $this->closing->duration;
     }
 
     /**

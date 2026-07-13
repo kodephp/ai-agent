@@ -22,7 +22,6 @@ final class PromptInjectionDetectorTest extends TestCase
     public function testNormalTextIsSafe(): void
     {
         $this->assertFalse($this->detector->isMalicious('请帮我写一首关于秋天的诗'));
-        $this->assertTrue($this->detector->isMalicious('请帮我写一首关于秋天的诗') === false);
     }
 
     public function testRoleHijackDetected(): void
@@ -69,6 +68,5 @@ final class PromptInjectionDetectorTest extends TestCase
     public function testEnsureSafeAllowsNormalText(): void
     {
         $this->detector->ensureSafe('今天天气真好');
-        $this->assertTrue(true); // 到达此处即通过
     }
 }

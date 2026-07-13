@@ -406,9 +406,7 @@ final class VideoClipper
 
         $filters = [];
         foreach ($operations as $op) {
-            if ($op instanceof ClipOperationConfig) {
-                $filters[] = $op->toFFmpegFilter();
-            }
+            $filters[] = $op->toFFmpegFilter();
         }
 
         if (empty($filters)) {

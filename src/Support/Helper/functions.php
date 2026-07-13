@@ -705,6 +705,138 @@ if (!function_exists('ai_image_to_video')) {
     }
 }
 
+if (!function_exists('ai_video_gateway')) {
+    /**
+     * 获取统一视频网关（多供应商自动路由）
+     *
+     * 聚合 Seedance 2.0/2.5、阿里通义万相、阿里数字人等供应商，
+     * 按能力 / 成本 / 健康度自动选择最优者，失败时自动转移。
+     *
+     * @return \Kode\AiAgent\VideoGateway\VideoGateway
+     *
+     * @example
+     * ```php
+     * $gateway = ai_video_gateway();
+     * $gateway->addSeedance(env('VOLC_API_KEY'), ['version' => '2.5']);
+     * $gateway->addWanxiang(env('DASHSCOPE_API_KEY'));
+     * $gateway->addAliyunAvatar(env('DASHSCOPE_API_KEY'));
+     *
+     * $video = $gateway->textToVideo('一只猫咪在草地上玩耍');
+     * ```
+     */
+    function ai_video_gateway(): \Kode\AiAgent\VideoGateway\VideoGateway
+    {
+        return \Kode\AiAgent\Support\Facade\Video::gateway();
+    }
+}
+
+if (!function_exists('ai_video_text_to_video')) {
+    /**
+     * 统一文生视频（快捷方法）
+     *
+     * 经统一视频网关自动路由到最合适的供应商。
+     *
+     * @param string $prompt 提示词
+     * @param array $options 选项（preferred_model / max_cost / capability 等）
+     * @return \Kode\AiAgent\Domain\Model\VideoResponse
+     *
+     * @example
+     * ```php
+     * $video = ai_video_text_to_video('一只猫咪在草地上玩耍', [
+     *     'preferred_model' => 'seedance-2.5-pro',
+     * ]);
+     * ```
+     */
+    function ai_video_text_to_video(string $prompt, array $options = []): \Kode\AiAgent\Domain\Model\VideoResponse
+    {
+        return \Kode\AiAgent\Support\Facade\Video::textToVideo($prompt, $options);
+    }
+}
+
+if (!function_exists('ai_video_image_to_video')) {
+    /**
+     * 统一图生视频（快捷方法）
+     *
+     * @param string $image 图像（URL / base64 / 本地路径）
+     * @param string|null $prompt 提示词
+     * @param array $options 选项
+     * @return \Kode\AiAgent\Domain\Model\VideoResponse
+     */
+    function ai_video_image_to_video(string $image, ?string $prompt = null, array $options = []): \Kode\AiAgent\Domain\Model\VideoResponse
+    {
+        return \Kode\AiAgent\Support\Facade\Video::imageToVideo($image, $prompt, $options);
+    }
+}
+
+if (!function_exists('ai_video_avatar')) {
+    /**
+     * 统一数字人视频生成（快捷方法）
+     *
+     * 自动路由到数字人供应商（如阿里数字人）。
+     *
+     * @param string $text 口播文本
+     * @param array $options 选项（avatar_id / voice_id 等）
+     * @return \Kode\AiAgent\Domain\Model\VideoResponse
+     *
+     * @example
+     * ```php
+     * $video = ai_video_avatar('大家好，欢迎使用！', [
+     *     'avatar_id' => 'default-female',
+     *     'voice_id' => 'voice-female-zh',
+     * ]);
+     * ```
+     */
+    function ai_video_avatar(string $text, array $options = []): \Kode\AiAgent\Domain\Model\VideoResponse
+    {
+        return \Kode\AiAgent\Support\Facade\Video::avatar($text, $options);
+    }
+}
+
+if (!function_exists('ai_drama_director')) {
+    /**
+     * 创建漫剧导演（绑定统一视频网关）
+     *
+     * @param \Kode\AiAgent\VideoGateway\VideoGateway $gateway 已配置各供应商的视频网关
+     * @return \Kode\AiAgent\Drama\Director\DramaDirector
+     *
+     * @example
+     * ```php
+     * $director = ai_drama_director($videoGateway);
+     * $result = $director->generate("场景1：清晨\n@model seedance-2.5-pro\n\n场景2：相遇");
+     * echo $result->finalVideo;
+     * ```
+     */
+    function ai_drama_director(\Kode\AiAgent\VideoGateway\VideoGateway $gateway): \Kode\AiAgent\Drama\Director\DramaDirector
+    {
+        return new \Kode\AiAgent\Drama\Director\DramaDirector($gateway);
+    }
+}
+
+if (!function_exists('ai_drama_generate')) {
+    /**
+     * 一键生成漫剧（快捷方法）
+     *
+     * @param string|array $script 剧本（文本或结构化数组）
+     * @param \Kode\AiAgent\VideoGateway\VideoGateway $gateway 统一视频网关
+     * @param array $options 选项
+     * @return \Kode\AiAgent\Drama\Director\DramaResult
+     *
+     * @example
+     * ```php
+     * $result = ai_drama_generate(
+     *     "场景1：清晨的街道\n@model seedance-2.5-pro",
+     *     $videoGateway,
+     *     ['resolution' => '1080p']
+     * );
+     * echo $result->finalVideo;
+     * ```
+     */
+    function ai_drama_generate(string|array $script, \Kode\AiAgent\VideoGateway\VideoGateway $gateway, array $options = []): \Kode\AiAgent\Drama\Director\DramaResult
+    {
+        return (new \Kode\AiAgent\Drama\Director\DramaDirector($gateway))->generate($script, $options);
+    }
+}
+
 if (!function_exists('ai_moe')) {
     /**
      * 获取 MOE 网关实例

@@ -386,7 +386,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             $lines = explode("\n", trim($block));
             if (count($lines) < 2) continue;
 
-            $timeLine = $lines[1] ?? '';
+            $timeLine = $lines[1];
             if (preg_match('/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/', $timeLine, $matches)) {
                 $cues[] = new SubtitleCue(
                     index: $index++,

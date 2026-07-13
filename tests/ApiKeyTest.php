@@ -211,7 +211,6 @@ final class ApiKeyTest extends TestCase
         
         $signature = $key->sign('POST', '/v1/chat', ['query' => 'hello']);
         
-        $this->assertIsString($signature);
         $this->assertSame(64, strlen($signature)); // sha256 hex
     }
 
