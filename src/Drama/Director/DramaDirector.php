@@ -56,8 +56,9 @@ final class DramaDirector
      * @param LoggerInterface|null $logger 日志
      * @param callable|null $composerFactory 合成器工厂（测试注入用；
      *        签名：(?LoggerInterface $logger, int $concurrency, array $config): object，
-     *        返回具备 addSceneVideos/setBackgroundMusic/compose 的对象。
-     *        生产环境传 null，使用默认的 VideoComposerV3。
+     *        返回具备 addSceneVideos/addTransition/setBackgroundMusic/compose 方法的对象，
+     *        其中 compose() 返回 ['output'=>string, 'total_duration'=>float, 'transitions_count'=>int]。
+     *        生产环境传 null，使用默认的 VideoComposerV3（本地 ffmpeg 转场合成）。
      */
     public function __construct(
         private VideoGateway $gateway,
@@ -196,7 +197,7 @@ final class DramaDirector
 
         $sceneVideos = [];
         $transitionManager = new TransitionManager();
-        $transitionDuration = (int) ($options['transition_duration'] ?? $this->config['transition_duration']);
+        $transitionDuration = (float) ($options['transition_duration'] ?? $this->config['transition_duration']);
 
         foreach ($valid as $index => $segment) {
             $sceneVideos[] = new SceneVideo(
@@ -226,6 +227,13 @@ final class DramaDirector
                 ['output_dir' => $options['output_dir'] ?? $this->config['output_dir']]
             );
         $composer->addSceneVideos($sceneVideos);
+
+        foreach ($valid as $index => $segment) {
+            if ($index < count($valid) - 1) {
+                $next = $valid[$index + 1];
+                $composer->addTransition($segment->id, $next->id, $segment->transition, $transitionDuration);
+            }
+        }
 
         if ($options['background_music'] ?? $this->config['background_music']) {
             $composer->setBackgroundMusic(

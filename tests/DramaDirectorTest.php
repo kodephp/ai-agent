@@ -106,10 +106,24 @@ final class DramaDirectorTest extends TestCase
             return new class {
                 public int $sceneCount = 0;
                 public ?string $music = null;
+                /** @var array<int, array{from: string, to: string, type: string, duration: int}> */
+                public array $transitions = [];
 
                 public function addSceneVideos(array $sceneVideos): self
                 {
                     $this->sceneCount = count($sceneVideos);
+
+                    return $this;
+                }
+
+                public function addTransition(string $from, string $to, $type, float $duration = 1.0): self
+                {
+                    $this->transitions[] = [
+                        'from' => $from,
+                        'to' => $to,
+                        'type' => $type instanceof \Kode\AiAgent\Drama\TransitionType ? $type->value : (string) $type,
+                        'duration' => $duration,
+                    ];
 
                     return $this;
                 }
@@ -126,7 +140,7 @@ final class DramaDirectorTest extends TestCase
                     return [
                         'output' => 'var/drama/output/final-fake.mp4',
                         'total_duration' => 12.0,
-                        'transitions_count' => max(0, $this->sceneCount - 1),
+                        'transitions_count' => count($this->transitions),
                     ];
                 }
             };

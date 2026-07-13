@@ -11,7 +11,7 @@ final class TransitionEffect
 {
     public function __construct(
         public TransitionType $type,
-        public int $duration = 1,
+        public float $duration = 1,
         public string $easing = 'ease-in-out',
         public array $options = [],
     ) {}
@@ -136,14 +136,14 @@ final class TransitionManager
      * @param string $fromSceneId 起始场景 ID
      * @param string $toSceneId 目标场景 ID
      * @param TransitionType $type 转场类型
-     * @param int $duration 转场时长（秒）
+     * @param float $duration 转场时长（秒）
      * @param array $options 额外配置选项
      */
     public function addTransition(
         string $fromSceneId,
         string $toSceneId,
         TransitionType $type,
-        int $duration = 1,
+        float $duration = 1,
         array $options = [],
     ): self {
         $key = $this->makeKey($fromSceneId, $toSceneId);

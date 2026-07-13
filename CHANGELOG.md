@@ -5,6 +5,35 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.22.0] - 2026-07-13
+
+### 增强 - 漫剧导演真实合成（本地 ffmpeg）
+
+将 `VideoComposerV3` 重写为**真正的本地合成器**（不依赖任何外部服务 / API）：
+
+- **转场真正生效**：合成时按 `TransitionManager` 中每段之间的转场，用 ffmpeg
+  `xfade` / `acrossfade` 做视频与音频交叉过渡（支持 fade / dissolve / slide_*
+  / cross_wipe 等，映射到 xfade 转场名），并扣除转场重叠时长计算总时长。
+- **输入归一化**：合成前统一分辨率 / 帧率 / 像素格式，并用 `ffprobe` 检测音轨、
+  缺失时补静音轨，保证不同来源片段稳定拼接。
+- **开场 / 结尾视频**：前后拼接（保留音轨）。
+- **背景音乐**：与原音 `amix` 混音（可设音量）。
+- **字幕**：`drawtext` 绘制（需配置 `subtitle_font`，否则自动跳过并记录警告）。
+- **健壮性**：转场合成失败时自动回退到普通拼接；`enable_transitions=false`
+  可关闭转场。
+
+#### DramaDirector 联动
+
+- `DramaDirector::compose()` 现在会把**每段各自的转场**逐个 `addTransition` 传给合成器，
+  实现"每段不同转场"的导演式组合。
+
+#### 其它
+
+- `VideoComposerV3::addTransition()` 时长参数改为 `float`（xfade 支持小数秒）。
+- `TransitionEffect::$duration` / `TransitionManager::addTransition()` 时长改为 `float`。
+- 新增 `tests/VideoComposerV3Test.php`（3 用例：转场+音乐 / 回退 / 单段）与
+  `tests/DramaDirectorIntegrationTest.php`（端到端真实合成）。
+
 ## [2.21.0] - 2026-07-13
 
 ### 新增 - AI 漫剧导演（DramaDirector）
