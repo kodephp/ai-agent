@@ -5,6 +5,49 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.23.0] - 2026-07-13
+
+### 新增 - 统一音频（TTS）网关 + 漫剧分段全 CRUD + 每步模型绑定
+
+#### 统一音频网关（AudioGateway）
+
+- 新增 `AudioGateway`：多供应商文字转语音的统一入口，按模型 / 音色 / 成本自动选最优，
+  并在供应商失败时自动转移。
+- 新增 `TtsProviderInterface` 接口与 `OpenAiTtsProvider` 默认实现，使用 OpenAI
+  最新的 `gpt-4o-mini-tts`（自然度顶尖、支持自然语言 `instructions` 控制语气），
+  输出 mp3 并保存到本地；构造可注入假 `HttpClient` 便于测试。
+- 新增 `AudioResponse` 语音响应值对象（`with()` 不可变更新）。
+- 新增 `Audio` 门面（`Support/Facade/Audio.php`）与助手函数
+  `ai_audio_gateway()` / `ai_audio_tts()`。
+
+#### 漫剧导演：分段级全 CRUD + 每步模型绑定
+
+- `DramaDirector` 新增分段级 CRUD：
+  `addSegment()` / `insertSegment()` / `removeSegment()` / `updateSegment()` /
+  `getSegment()` / `findSegment()` / `setSegments()` / `toArray()`，插入/删除后
+  自动重排 `order` 并生成全局唯一 ID。
+- 每段现在可携带**配音（TTS）绑定**：`ModelBinding` 扩展 `voice` / `instructions`，
+  `DramaSegment` 扩展 `audioText` / `tts` / `audioUrl` / `audioStatus` / `subtitle`；
+  `ScriptSplitter` 新增行内指令 `@audio` / `@narration` / `@tts` / `@ttsprovider` /
+  `@voice` / `@ttsinstructions` / `@subtitle`，并支持 TTS 模型继承。
+- `DramaDirector` 生成 / 重生成时若已设置 `AudioGateway`，会为含旁白的片段合成配音
+  （`regenerateSegmentAudio()` / `generateAudioForAll()`）。
+- `compose()` 把每段各自的**配音音频**与**字幕**传给合成器。
+
+#### 合成器：每段音频混流 + 每段字幕烧录
+
+- `VideoComposerV3::prepareSceneVideo()` 现在会：烧录每段字幕（`drawtext`，需
+  `subtitle_font`），并把每段 `SceneVideo::$audioUrl`（TTS）对齐到场景时长后混流
+  （不足补静音、过长截断），与转场 `acrossfade` 协同，最终再叠加背景音乐。
+- `SceneVideo` 新增 `audioUrl` / `subtitle` 字段。
+
+#### 测试
+
+- 新增 `tests/AudioGatewayTest.php`、`tests/OpenAiTtsProviderTest.php`、
+  `tests/DramaDirectorAudioTest.php`（分段 CRUD + 配音 + 剧本指令解析）；
+  `tests/VideoComposerV3Test.php` 新增"每段音频 + 字幕"用例。
+- 全量 242 用例通过，PHPStan level 5 零错误。
+
 ## [2.22.0] - 2026-07-13
 
 ### 增强 - 漫剧导演真实合成（本地 ffmpeg）

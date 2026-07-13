@@ -56,6 +56,7 @@ final class ScriptSplitter
         $segments = [];
         $order = 0;
         $lastModel = null;
+        $lastTts = null;
 
         foreach ($items as $item) {
             $order++;
@@ -68,10 +69,16 @@ final class ScriptSplitter
             if (!isset($data['model']) && $lastModel !== null) {
                 $data['model'] = $lastModel;
             }
+            if (!isset($data['tts']) && !isset($data['voice']) && $lastTts !== null) {
+                $data['tts'] = $lastTts;
+            }
 
             $segment = DramaSegment::fromArray($data);
             if ($segment->model !== null) {
                 $lastModel = $segment->model;
+            }
+            if ($segment->tts !== null) {
+                $lastTts = $segment->tts;
             }
 
             $segments[] = $segment;
@@ -92,6 +99,7 @@ final class ScriptSplitter
 
         $segments = [];
         $lastModel = null;
+        $lastTts = null;
 
         foreach ($blocks as $index => $block) {
             $order = $index + 1;
@@ -129,6 +137,21 @@ final class ScriptSplitter
                 $model = $lastModel;
             }
 
+            $tts = null;
+            if (isset($directives['tts']) || isset($directives['ttsprovider']) || isset($directives['voice'])) {
+                $tts = new ModelBinding(
+                    provider: $directives['ttsprovider'] ?? null,
+                    model: $directives['tts'] ?? null,
+                    voice: $directives['voice'] ?? null,
+                    instructions: $directives['ttsinstructions'] ?? null,
+                );
+            } elseif ($lastTts !== null) {
+                $tts = $lastTts;
+            }
+
+            $audioText = $directives['audio'] ?? $directives['narration'] ?? '';
+            $subtitle = $directives['subtitle'] ?? null;
+
             $segments[] = new DramaSegment(
                 id: "seg-{$order}",
                 order: $order,
@@ -141,10 +164,17 @@ final class ScriptSplitter
                 duration: $duration,
                 style: $style,
                 status: 'pending',
+                audioText: $audioText,
+                tts: $tts,
+                audioStatus: $audioText !== '' ? 'pending' : 'none',
+                subtitle: $subtitle,
             );
 
             if ($model !== null) {
                 $lastModel = $model;
+            }
+            if ($tts !== null) {
+                $lastTts = $tts;
             }
         }
 

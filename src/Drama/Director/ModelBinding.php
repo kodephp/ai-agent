@@ -17,6 +17,8 @@ final class ModelBinding
     public function __construct(
         public ?string $provider = null,
         public ?string $model = null,
+        public ?string $voice = null,
+        public ?string $instructions = null,
     ) {}
 
     /**
@@ -28,7 +30,7 @@ final class ModelBinding
     }
 
     /**
-     * 转换为统一视频网关的路由选项
+     * 转换为统一视频/音频网关的路由选项
      *
      * @return array<string, mixed>
      */
@@ -41,6 +43,12 @@ final class ModelBinding
         if ($this->provider !== null) {
             $options['preferred_platform'] = $this->provider;
         }
+        if ($this->voice !== null) {
+            $options['voice'] = $this->voice;
+        }
+        if ($this->instructions !== null) {
+            $options['instructions'] = $this->instructions;
+        }
         return $options;
     }
 
@@ -49,6 +57,8 @@ final class ModelBinding
         return [
             'provider' => $this->provider,
             'model' => $this->model,
+            'voice' => $this->voice,
+            'instructions' => $this->instructions,
         ];
     }
 
@@ -57,6 +67,8 @@ final class ModelBinding
         return new self(
             provider: $data['provider'] ?? null,
             model: $data['model'] ?? null,
+            voice: $data['voice'] ?? null,
+            instructions: $data['instructions'] ?? null,
         );
     }
 }

@@ -19,6 +19,7 @@
 - **短剧生成**：一键生成完整短剧（剧本→场景→文生图→图生视频→合成）
 - **多模态支持**：文本生成图像、文本生成视频、数字人视频生成
 - **统一视频网关**：Seedance 2.0/**2.5**、阿里通义万相、阿里数字人 多供应商自动路由（能力/成本/健康度），失败自动转移
+- **统一音频网关（TTS）**：OpenAI `gpt-4o-mini-tts`（最接近真人）多供应商路由与失败转移，输出本地 mp3
 - **六边形架构**：核心逻辑与外部依赖解耦，依赖方向正确
 - **多平台支持**：OpenAI、Anthropic Claude、DeepSeek、阿里云通义千问、Google Gemini、百度文心一言、腾讯混元、讯飞星火
 - **API Key 轮换**：支持单 Key、双 Key（主备）、多 Key 轮换模式
@@ -1599,7 +1600,52 @@ $result = Drama::generate([
   统一分辨率与帧率、补音轨，并可叠加背景音乐与字幕（无需联网或第三方 API）。
   转场合成失败时自动回退到普通拼接。
 
- ## 流式响应
+### 配音（TTS）与分段全 CRUD
+
+每段分镜可携带**旁白文本**与**配音模型绑定**，由统一音频网关（默认 OpenAI
+`gpt-4o-mini-tts`，最接近真人）合成配音，`compose()` 会把每段各自的配音混流、
+把字幕烧录进画面：
+
+```php
+use Kode\AiAgent\Support\Facade\Audio;
+use Kode\AiAgent\Drama\Director\ModelBinding;
+
+// 配置默认 TTS（也可在 DramaDirector 构造时注入 AudioGateway）
+Audio::addOpenAi(env('OPENAI_API_KEY'), ['model' => 'gpt-4o-mini-tts']);
+
+// 文本剧本中直接用行内指令声明旁白 / 音色 / 配音模型 / 字幕
+$result = Drama::generate(<<<SCRIPT
+场景1：清晨的街道，一只猫在散步
+@model seedance-2.5-pro
+@audio 旁白：这是万和水岸的一个清晨
+@voice nova
+@tts gpt-4o-mini-tts
+@subtitle 万和水岸 · 第一幕
+SCRIPT);
+```
+
+分段级 **全 CRUD**（ID 全局唯一，插入/删除后自动重排 `order`）：
+
+```php
+$director->addSegment(['prompt' => '场景A', 'audio_text' => '旁白A']);
+$seg = $director->insertSegment(1, ['prompt' => '场景B']); // 返回新分段
+$director->updateSegment($seg->id, ['duration' => 8, 'tts' => new ModelBinding(null, 'gpt-4o-mini-tts', 'alloy')]);
+$director->removeSegment(1);
+$director->regenerateSegmentAudio(0, ['audio_text' => '重新配音']); // 仅重生成配音
+$segments = $director->toArray();   // 可持久化，再用 setSegments() 还原
+```
+
+要点：
+
+- 行内指令 `@audio` / `@narration`（旁白）、`@tts` / `@ttsprovider` / `@voice` /
+  `@ttsinstructions`（配音模型与语气）、`@subtitle`（字幕）均支持；未指定的分段
+  **继承上一段的 TTS 绑定**。
+- 仅在 `DramaDirector` 注入了 `AudioGateway` 时才会合成配音；无旁白文本的分段标记为
+  `audio_status = 'none'`，不会调用 TTS。
+- `VideoComposerV3` 会把每段配音对齐到场景时长（不足补静音、过长截断）再混流，
+  并与转场 `acrossfade` 协同；字幕通过 `drawtext` 烧录（需配置 `subtitle_font`）。
+
+  ## 流式响应
  
 ### 同步流式
 

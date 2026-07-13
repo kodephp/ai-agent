@@ -837,6 +837,44 @@ if (!function_exists('ai_drama_generate')) {
     }
 }
 
+if (!function_exists('ai_audio_gateway')) {
+    /**
+     * 获取统一音频（TTS）网关实例
+     *
+     * @return \Kode\AiAgent\AudioGateway\AudioGateway
+     *
+     * @example
+     * ```php
+     * $gateway = ai_audio_gateway();
+     * $gateway->addOpenAi(env('OPENAI_API_KEY'), ['model' => 'gpt-4o-mini-tts']);
+     * ```
+     */
+    function ai_audio_gateway(): \Kode\AiAgent\AudioGateway\AudioGateway
+    {
+        return \Kode\AiAgent\Support\Facade\Audio::gateway();
+    }
+}
+
+if (!function_exists('ai_audio_tts')) {
+    /**
+     * 文本转语音（统一音频网关，默认 OpenAI gpt-4o-mini-tts）
+     *
+     * @param string $text 旁白 / 口播文本
+     * @param array $options 选项：voice / instructions / preferred_model 等
+     * @return \Kode\AiAgent\Domain\Model\AudioResponse
+     *
+     * @example
+     * ```php
+     * $audio = ai_audio_tts('欢迎使用万和水岸智能漫剧', ['voice' => 'alloy']);
+     * echo $audio->url;
+     * ```
+     */
+    function ai_audio_tts(string $text, array $options = []): \Kode\AiAgent\Domain\Model\AudioResponse
+    {
+        return \Kode\AiAgent\Support\Facade\Audio::tts($text, $options);
+    }
+}
+
 if (!function_exists('ai_moe')) {
     /**
      * 获取 MOE 网关实例

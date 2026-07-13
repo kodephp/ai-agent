@@ -19,5 +19,7 @@ readonly class SceneVideo
         public string $videoUrl,
         public float $duration,
         public ?string $imageUrl = null,
+        public ?string $audioUrl = null,
+        public ?string $subtitle = null,
     ) {}
 }

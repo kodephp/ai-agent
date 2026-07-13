@@ -20,15 +20,20 @@ final class DramaSegment
      * @param string $id 片段唯一 ID（如 seg-1）
      * @param int $order 序号（从 1 开始）
      * @param string $title 标题
-     * @param string $prompt 生成提示词
+     * @param string $prompt 视频生成提示词
      * @param TransitionType $transition 到下一个片段的转场
      * @param string|null $backgroundImage 背景图（URL / 本地路径）
      * @param string|null $backgroundVideo 背景视频（直接复用为片段视频）
-     * @param ModelBinding|null $model 绑定的生成模型
+     * @param ModelBinding|null $model 绑定的视频生成模型
      * @param int $duration 时长（秒）
      * @param string|null $style 风格
      * @param string|null $generatedVideo 生成后的视频 URL/路径
-     * @param string $status 状态：pending | generated | reused | failed
+     * @param string $status 视频状态：pending | generated | reused | failed
+     * @param string $audioText 旁白 / 口播文本（用于 TTS 合成）
+     * @param ModelBinding|null $tts 绑定的 TTS（音频）模型（含 voice / instructions）
+     * @param string|null $audioUrl 合成后的音频 URL/路径
+     * @param string $audioStatus 音频状态：pending | generated | failed
+     * @param string|null $subtitle 字幕文本（覆盖自动旁白）
      */
     public function __construct(
         public string $id,
@@ -43,10 +48,15 @@ final class DramaSegment
         public ?string $style = null,
         public ?string $generatedVideo = null,
         public string $status = 'pending',
+        public string $audioText = '',
+        public ?ModelBinding $tts = null,
+        public ?string $audioUrl = null,
+        public string $audioStatus = 'pending',
+        public ?string $subtitle = null,
     ) {}
 
     /**
-     * 生成带覆盖字段的新实例（用于单段调整/重生成）
+     * 生成带覆盖字段的新实例（用于单段调整/重生成 / CRUD）
      *
      * @param array<string, mixed> $values
      */
@@ -65,12 +75,38 @@ final class DramaSegment
             style: $values['style'] ?? $this->style,
             generatedVideo: $values['generated_video'] ?? $values['generatedVideo'] ?? $this->generatedVideo,
             status: $values['status'] ?? $this->status,
+            audioText: $values['audio_text'] ?? $values['audioText'] ?? $this->audioText,
+            tts: $values['tts'] ?? $this->tts,
+            audioUrl: $values['audio_url'] ?? $values['audioUrl'] ?? $this->audioUrl,
+            audioStatus: $values['audio_status'] ?? $this->audioStatus,
+            subtitle: $values['subtitle'] ?? $this->subtitle,
         );
     }
 
     public function hasGeneratedVideo(): bool
     {
         return $this->generatedVideo !== null && $this->generatedVideo !== '';
+    }
+
+    public function hasGeneratedAudio(): bool
+    {
+        return $this->audioUrl !== null && $this->audioUrl !== '';
+    }
+
+    /**
+     * 是否有可用于合成音频的旁白文本
+     */
+    public function hasNarration(): bool
+    {
+        return trim($this->audioText) !== '';
+    }
+
+    /**
+     * 实际用于字幕的文本（优先 subtitle，其次旁白）
+     */
+    public function subtitleText(): string
+    {
+        return trim($this->subtitle ?? $this->audioText);
     }
 
     /**
@@ -91,6 +127,11 @@ final class DramaSegment
             'style' => $this->style,
             'generated_video' => $this->generatedVideo,
             'status' => $this->status,
+            'audio_text' => $this->audioText,
+            'tts' => $this->tts?->toArray(),
+            'audio_url' => $this->audioUrl,
+            'audio_status' => $this->audioStatus,
+            'subtitle' => $this->subtitle,
         ];
     }
 
@@ -117,6 +158,17 @@ final class DramaSegment
             style: $data['style'] ?? null,
             generatedVideo: $data['generated_video'] ?? $data['generatedVideo'] ?? null,
             status: $data['status'] ?? 'pending',
+            audioText: $data['audio_text'] ?? $data['audioText'] ?? '',
+            tts: isset($data['tts'])
+                ? (match (true) {
+                    $data['tts'] instanceof ModelBinding => $data['tts'],
+                    is_array($data['tts']) => ModelBinding::fromArray($data['tts']),
+                    default => new ModelBinding(null, (string) $data['tts']),
+                })
+                : null,
+            audioUrl: $data['audio_url'] ?? $data['audioUrl'] ?? null,
+            audioStatus: $data['audio_status'] ?? 'pending',
+            subtitle: $data['subtitle'] ?? null,
         );
     }
 }

@@ -177,4 +177,57 @@ final class VideoComposerV3Test extends TestCase
         self::assertFileExists($result['output']);
         self::assertSame(0, $result['transitions_count']);
     }
+
+    public function testComposeWithPerSceneAudioAndSubtitle(): void
+    {
+        $c1 = $this->makeClip('clip1', 'red', 2);
+        $c2 = $this->makeClip('clip2', 'green', 2);
+        $voice = $this->makeTone('voice', 2);
+
+        $font = $this->findFont();
+
+        $config = [
+            'resolution' => '320x240',
+            'fps' => 30,
+            'output_dir' => $this->tmpDir . '/out',
+            'temp_dir' => $this->tmpDir . '/temp',
+        ];
+        if ($font !== '') {
+            $config['subtitle_font'] = $font;
+        }
+
+        $composer = new VideoComposerV3(new NullLogger(), 4, $config);
+        $composer->addSceneVideo(new SceneVideo('seg-1', 1, $c1, 2.0, audioUrl: $voice, subtitle: '第一幕：清晨'));
+        $composer->addSceneVideo(new SceneVideo('seg-2', 2, $c2, 2.0));
+
+        $result = $composer->compose();
+
+        self::assertFileExists($result['output']);
+
+        // 输出必须包含音轨（配音已混流）
+        $command = sprintf(
+            'ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 %s 2>/dev/null',
+            escapeshellarg($result['output'])
+        );
+        exec($command, $out, $code);
+        self::assertSame(0, $code);
+        self::assertNotEmpty($out, '合成视频缺少音轨（配音未混流）');
+    }
+
+    private function findFont(): string
+    {
+        $candidates = [
+            '/System/Library/Fonts/Supplemental/Arial.ttf',
+            '/Library/Fonts/Arial.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+        ];
+        foreach ($candidates as $font) {
+            if (is_file($font)) {
+                return $font;
+            }
+        }
+
+        return '';
+    }
 }

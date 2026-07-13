@@ -67,6 +67,8 @@ final class VideoComposerV3
             'preset' => 'veryfast',
             'enable_transitions' => true,
             'subtitle_font' => null,
+            'subtitle_font_size' => 36,
+            'subtitle_color' => 'white',
         ], $config);
 
         $this->config['concurrency'] = $concurrency;
@@ -287,11 +289,12 @@ final class VideoComposerV3
 
         $useTransitions = ($options['enable_transitions'] ?? $this->config['enable_transitions']) && count($this->sceneVideos) > 1;
 
-        // 归一化所有输入，统一分辨率 / 帧率 / 像素格式 / 音轨
+        // 归一化所有输入，统一分辨率 / 帧率 / 像素格式 / 音轨，
+        // 并烧录每段字幕、混流每段配音（TTS）
         $normalized = [];
         $tempFiles = [];
         foreach ($this->sceneVideos as $scene) {
-            $path = $this->normalizeInput($scene->videoUrl, (float) $scene->duration);
+            $path = $this->prepareSceneVideo($scene);
             if ($path !== $scene->videoUrl) {
                 $tempFiles[] = $path;
             }
@@ -431,6 +434,91 @@ final class VideoComposerV3
         @unlink($concatFile);
 
         return $output;
+    }
+
+    /**
+     * 准备单个场景：归一化视频 + 烧录字幕 + 混流每段配音（TTS）
+     *
+     * 返回带音轨（TTS 或原始音轨或静音）和字幕的视频文件路径。
+     */
+    private function prepareSceneVideo(SceneVideo $scene): string
+    {
+        $srcPath = $scene->videoUrl;
+        if (!is_file($srcPath)) {
+            return $srcPath;
+        }
+
+        [$w, $h] = $this->resolution();
+        $fps = (int) $this->config['fps'];
+
+        $scale = sprintf(
+            'scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=%d,format=yuv420p',
+            $w,
+            $h,
+            $w,
+            $h,
+            $fps
+        );
+
+        $font = $this->config['subtitle_font'];
+        $subFilter = '';
+        if ($scene->subtitle !== null && $font !== null && is_file($font)) {
+            $text = str_replace(["\r", "\n"], [' ', ' '], (string) $scene->subtitle);
+            $fontSize = $this->config['subtitle_font_size'] ?? 36;
+            $color = $this->config['subtitle_color'] ?? 'white';
+            $subFilter = sprintf(
+                ',drawtext=fontfile=%s:text=%s:fontsize=%d:fontcolor=%s:x=(w-text_w)/2:y=h-th-40',
+                escapeshellarg($font),
+                escapeshellarg($text),
+                $fontSize,
+                $color
+            );
+        }
+
+        $vf = $scale . $subFilter;
+        $dur = (float) $scene->duration;
+        $audioUrl = $scene->audioUrl;
+        $output = $this->getTempPath('scene.mp4');
+
+        if ($audioUrl !== null && is_file($audioUrl)) {
+            // 混流 TTS 配音：将音频对齐到场景时长（不足补静音，过长截断）
+            $af = sprintf('[1:a]apad,atrim=0:%.3f[a]', $dur);
+            $command = sprintf(
+                'ffmpeg -y -i %s -i %s -filter_complex %s -map 0:v -map "[a]" -vf %s -c:v %s -preset %s -pix_fmt yuv420p -c:a %s -ar 44100 -ac 2 %s 2>/dev/null',
+                escapeshellarg($srcPath),
+                escapeshellarg($audioUrl),
+                escapeshellarg($af),
+                escapeshellarg($vf),
+                escapeshellarg($this->config['video_codec']),
+                escapeshellarg($this->config['preset']),
+                escapeshellarg($this->config['audio_codec']),
+                escapeshellarg($output)
+            );
+        } elseif ($this->hasAudio($srcPath)) {
+            $command = sprintf(
+                'ffmpeg -y -i %s -vf %s -c:v %s -preset %s -pix_fmt yuv420p -c:a %s -ar 44100 -ac 2 -shortest %s 2>/dev/null',
+                escapeshellarg($srcPath),
+                escapeshellarg($vf),
+                escapeshellarg($this->config['video_codec']),
+                escapeshellarg($this->config['preset']),
+                escapeshellarg($this->config['audio_codec']),
+                escapeshellarg($output)
+            );
+        } else {
+            $command = sprintf(
+                'ffmpeg -y -i %s -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -vf %s -c:v %s -preset %s -pix_fmt yuv420p -c:a %s -shortest %s 2>/dev/null',
+                escapeshellarg($srcPath),
+                escapeshellarg($vf),
+                escapeshellarg($this->config['video_codec']),
+                escapeshellarg($this->config['preset']),
+                escapeshellarg($this->config['audio_codec']),
+                escapeshellarg($output)
+            );
+        }
+
+        exec($command, $outputLines, $returnCode);
+
+        return ($returnCode === 0 && is_file($output)) ? $output : $srcPath;
     }
 
     /**
