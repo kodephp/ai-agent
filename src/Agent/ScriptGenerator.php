@@ -98,7 +98,7 @@ class ScriptGenerator
         return $result;
     }
 
-    public function splitScenes(string $script, int $sceneCount = null): array
+    public function splitScenes(string $script, ?int $sceneCount = null): array
     {
         $parsed = $this->parse($script);
 

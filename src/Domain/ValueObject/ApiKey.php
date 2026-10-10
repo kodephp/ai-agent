@@ -205,7 +205,7 @@ final readonly class ApiKey
     /**
      * 获取额外参数
      */
-    public function extra(string $key = null): mixed
+    public function extra(?string $key = null): mixed
     {
         if ($key === null) {
             return $this->extra;

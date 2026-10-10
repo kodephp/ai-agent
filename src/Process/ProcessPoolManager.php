@@ -78,7 +78,7 @@ final class ProcessPoolManager
      *
      * @param callable|null $onOutput 输出回调，接受 (进程ID, 输出内容) 参数
      */
-    public function run(callable $onOutput = null): void
+    public function run(?callable $onOutput = null): void
     {
         foreach ($this->processes as $process) {
             $process->start();
@@ -99,7 +99,7 @@ final class ProcessPoolManager
      * @param callable|null $onOutput 输出回调
      * @return array 所有进程的输出
      */
-    public function runAndWait(callable $onOutput = null): array
+    public function runAndWait(?callable $onOutput = null): array
     {
         $this->run($onOutput);
 
@@ -125,7 +125,7 @@ final class ProcessPoolManager
      *
      * @param callable|null $onOutput 输出回调
      */
-    public function waitForAll(callable $onOutput = null): void
+    public function waitForAll(?callable $onOutput = null): void
     {
         while ($this->isRunning()) {
             foreach ($this->processes as $process) {
