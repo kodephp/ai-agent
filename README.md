@@ -2,7 +2,7 @@
 
 企业级 PHP AI Agent 框架，融合 **MOE 混合专家架构**，兼容 Symfony AI 生态。**单 Key 多模型**智能路由、Token 预算平衡、Prompt 压缩、响应缓存、熔断降级、提示词注入检测，支持多 Agent 协作、短剧生成、多模态（文生图/视频）、Fiber 协程、进程管理。
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-8892BF.svg)](https://php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-8.4%2B-8892BF.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-2.23.0-green.svg)](https://github.com/kodephp/ai-agent)
 
