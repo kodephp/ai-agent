@@ -16,23 +16,11 @@ final class OpenAiTtsProviderTest extends TestCase
 {
     private function fakeClient(string $body, int $status = 200, string $reason = 'OK'): \Kode\HttpClient\HttpClientInterface
     {
-        return new class($body, $status, $reason) implements \Kode\HttpClient\HttpClientInterface {
-            public function __construct(
-                private string $body,
-                private int $status,
-                private string $reason,
-            ) {}
+        $response = new Response($status, [], $body, '1.1', $reason);
+        $client = $this->createMock(\Kode\HttpClient\HttpClientInterface::class);
+        $client->method('sendRequest')->willReturn($response);
 
-            public function sendRequest(\Psr\Http\Message\RequestInterface $request): \Psr\Http\Message\ResponseInterface
-            {
-                return new Response($this->status, [], $this->body, '1.1', $this->reason);
-            }
-
-            public function sendRequestWithContext(\Psr\Http\Message\RequestInterface $request, mixed $context = null): \Psr\Http\Message\ResponseInterface
-            {
-                return $this->sendRequest($request);
-            }
-        };
+        return $client;
     }
 
     public function testSynthesizeWritesAudioFile(): void
@@ -59,30 +47,25 @@ final class OpenAiTtsProviderTest extends TestCase
 
     public function testSynthesizeSendsVoiceAndInstructions(): void
     {
-        $client = new class implements \Kode\HttpClient\HttpClientInterface {
-            /** @var array<string, string> */
-            public array $captured = [];
+        /** @var array<string, string> $captured */
+        $captured = [];
+        $client = $this->createMock(\Kode\HttpClient\HttpClientInterface::class);
+        $client->method('sendRequest')->willReturnCallback(
+            static function (\Psr\Http\Message\RequestInterface $request) use (&$captured): \Psr\Http\Message\ResponseInterface {
+                $captured['body'] = (string) $request->getBody();
+                $captured['auth'] = $request->getHeaderLine('Authorization');
 
-            public function sendRequest(\Psr\Http\Message\RequestInterface $request): \Psr\Http\Message\ResponseInterface
-            {
-                $this->captured['body'] = (string) $request->getBody();
-                $this->captured['auth'] = $request->getHeaderLine('Authorization');
                 return new Response(200, [], 'data');
             }
-
-            public function sendRequestWithContext(\Psr\Http\Message\RequestInterface $request, mixed $context = null): \Psr\Http\Message\ResponseInterface
-            {
-                return $this->sendRequest($request);
-            }
-        };
+        );
 
         $provider = new OpenAiTtsProvider('sk-secret', ['output_dir' => sys_get_temp_dir()], $client);
         $provider->synthesize('你好', ['voice' => 'nova', 'instructions' => '用温柔的语气']);
 
-        $body = json_decode($client->captured['body'], true);
+        $body = json_decode($captured['body'], true);
         self::assertSame('nova', $body['voice']);
         self::assertSame('用温柔的语气', $body['instructions']);
-        self::assertSame('Bearer sk-secret', $client->captured['auth']);
+        self::assertSame('Bearer sk-secret', $captured['auth']);
     }
 
     public function testEstimateCostApproximates(): void
