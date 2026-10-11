@@ -76,7 +76,7 @@ final class AdapterFactory
     /**
      * 快速创建 OpenAI 适配器
      */
-    public static function openai(string $apiKey, array $config = []): AdapterInterface
+    public static function openai(#[\SensitiveParameter] string $apiKey, array $config = []): AdapterInterface
     {
         return self::create('openai', array_merge($config, ['api_key' => $apiKey]));
     }
@@ -84,7 +84,7 @@ final class AdapterFactory
     /**
      * 快速创建 Anthropic 适配器
      */
-    public static function anthropic(string $apiKey, array $config = []): AdapterInterface
+    public static function anthropic(#[\SensitiveParameter] string $apiKey, array $config = []): AdapterInterface
     {
         return self::create('anthropic', array_merge($config, ['api_key' => $apiKey]));
     }
@@ -92,7 +92,7 @@ final class AdapterFactory
     /**
      * 快速创建 DeepSeek 适配器
      */
-    public static function deepseek(string $apiKey, array $config = []): AdapterInterface
+    public static function deepseek(#[\SensitiveParameter] string $apiKey, array $config = []): AdapterInterface
     {
         return self::create('deepseek', array_merge($config, ['api_key' => $apiKey]));
     }
@@ -100,7 +100,7 @@ final class AdapterFactory
     /**
      * 快速创建阿里云适配器
      */
-    public static function aliyun(string $apiKey, array $config = []): AdapterInterface
+    public static function aliyun(#[\SensitiveParameter] string $apiKey, array $config = []): AdapterInterface
     {
         return self::create('aliyun', array_merge($config, ['api_key' => $apiKey]));
     }
@@ -108,7 +108,7 @@ final class AdapterFactory
     /**
      * 快速创建 Gemini 适配器
      */
-    public static function gemini(string $apiKey, array $config = []): AdapterInterface
+    public static function gemini(#[\SensitiveParameter] string $apiKey, array $config = []): AdapterInterface
     {
         return self::create('gemini', array_merge($config, ['api_key' => $apiKey]));
     }
@@ -116,7 +116,7 @@ final class AdapterFactory
     /**
      * 快速创建百度文心一言适配器
      */
-    public static function baidu(string $apiKey, string $secretKey, array $config = []): AdapterInterface
+    public static function baidu(#[\SensitiveParameter] string $apiKey, #[\SensitiveParameter] string $secretKey, array $config = []): AdapterInterface
     {
         return self::create('baidu', array_merge($config, [
             'api_key' => $apiKey,
@@ -127,7 +127,7 @@ final class AdapterFactory
     /**
      * 快速创建腾讯混元适配器
      */
-    public static function tencent(string $secretId, string $secretKey, array $config = []): AdapterInterface
+    public static function tencent(string $secretId, #[\SensitiveParameter] string $secretKey, array $config = []): AdapterInterface
     {
         return self::create('tencent', array_merge($config, [
             'secret_id' => $secretId,
@@ -138,7 +138,7 @@ final class AdapterFactory
     /**
      * 快速创建讯飞星火适配器
      */
-    public static function xunfei(string $appId, string $apiKey, string $apiSecret, array $config = []): AdapterInterface
+    public static function xunfei(string $appId, #[\SensitiveParameter] string $apiKey, string $apiSecret, array $config = []): AdapterInterface
     {
         return self::create('xunfei', array_merge($config, [
             'app_id' => $appId,
@@ -150,7 +150,7 @@ final class AdapterFactory
     /**
      * 快速创建 Seedance 2.0 视频适配器
      */
-    public static function seedance(string $apiKey, array $config = []): AdapterInterface
+    public static function seedance(#[\SensitiveParameter] string $apiKey, array $config = []): AdapterInterface
     {
         return self::create('seedance', array_merge($config, ['api_key' => $apiKey]));
     }

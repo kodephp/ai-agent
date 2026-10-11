@@ -47,7 +47,7 @@ final readonly class TokenBalancer
      * @param int $tokens 该模型报告的 Token 数
      * @param string $text 原始文本（用于检测语言场景）
      */
-    public function equivalentTokens(string $model, int $tokens, string $text): int
+    public function equivalentTokens(string $model, #[\SensitiveParameter] int $tokens, string $text): int
     {
         $language = $this->efficiency->detectLanguage($text);
         return $this->efficiency->normalize($model, $tokens, $language);

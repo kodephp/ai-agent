@@ -118,7 +118,7 @@ final class MoE extends Facade
      */
     public function addExpert(
         string $platform,
-        string|array $apiKey,
+        #[\SensitiveParameter] string|array $apiKey,
         array $capabilities = ['chat'],
         ?string $model = null,
         int $priority = 100,

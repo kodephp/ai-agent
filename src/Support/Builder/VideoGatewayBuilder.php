@@ -45,7 +45,7 @@ final class VideoGatewayBuilder
         return $this;
     }
 
-    public function addSeedance(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addSeedance(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         $this->providerConfigs[] = [
             'type' => 'seedance',
@@ -57,7 +57,7 @@ final class VideoGatewayBuilder
         return $this;
     }
 
-    public function addWanxiang(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addWanxiang(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         $this->providerConfigs[] = [
             'type' => 'wanxiang',
@@ -69,7 +69,7 @@ final class VideoGatewayBuilder
         return $this;
     }
 
-    public function addAliyunAvatar(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addAliyunAvatar(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         $this->providerConfigs[] = [
             'type' => 'aliyun_avatar',

@@ -56,7 +56,7 @@ final class WanxiangVideoProvider implements VideoProviderInterface
     /**
      * @param array<string, mixed> $options resolution/duration/aspect_ratio/base_url 等
      */
-    public function __construct(string $apiKey, array $options = [])
+    public function __construct(#[\SensitiveParameter] string $apiKey, array $options = [])
     {
         if ($apiKey === '') {
             throw new \Kode\AiAgent\Exception\ConfigurationException('api_key 不能为空');

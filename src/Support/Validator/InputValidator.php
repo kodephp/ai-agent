@@ -176,7 +176,7 @@ final class InputValidator
      * @param string $apiKey API Key
      * @return bool 是否有效
      */
-    public function isValidApiKey(string $apiKey): bool
+    public function isValidApiKey(#[\SensitiveParameter] string $apiKey): bool
     {
         if (strlen($apiKey) < 16) {
             return false;

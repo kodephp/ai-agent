@@ -97,7 +97,7 @@ final readonly class ModelTokenEfficiency
      * @param int $tokens 该模型下估算的 Token 数
      * @param string $language 语言场景
      */
-    public function normalize(string $model, int $tokens, string $language = 'overall'): int
+    public function normalize(string $model, #[\SensitiveParameter] int $tokens, string $language = 'overall'): int
     {
         return (int) round($tokens / $this->index($model, $language));
     }

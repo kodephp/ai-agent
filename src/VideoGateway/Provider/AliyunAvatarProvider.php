@@ -46,7 +46,7 @@ final class AliyunAvatarProvider implements VideoProviderInterface
     /**
      * @param array<string, mixed> $options base_url/avatar_id/voice_id/timeout 等
      */
-    public function __construct(string $apiKey, array $options = [])
+    public function __construct(#[\SensitiveParameter] string $apiKey, array $options = [])
     {
         if ($apiKey === '') {
             throw new \Kode\AiAgent\Exception\ConfigurationException('api_key 不能为空');

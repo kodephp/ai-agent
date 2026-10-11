@@ -89,7 +89,7 @@ final class Audio extends Facade
         return $this;
     }
 
-    public function addOpenAi(string $apiKey, array $options = [], int $priority = 100): self
+    public function addOpenAi(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100): self
     {
         self::gateway()->addOpenAi($apiKey, $options, $priority);
         return $this;

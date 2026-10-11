@@ -93,7 +93,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         $this->validateConfig();
     }
 
-    public static function create(string $apiKey, array $config = []): self
+    public static function create(#[\SensitiveParameter] string $apiKey, array $config = []): self
     {
         $client = \Kode\HttpClient\Factory::create([
             'timeout' => $config['timeout'] ?? self::DEFAULT_TIMEOUT,

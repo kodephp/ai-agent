@@ -256,7 +256,7 @@ final class BaiduAdapter implements AdapterInterface
         return $this->accessToken ?? '';
     }
 
-    private function buildApiUrl(string $token): string
+    private function buildApiUrl(#[\SensitiveParameter] string $token): string
     {
         $model = $this->resolveModel([]);
         $baseUrl = $this->resolveBaseUrl();
@@ -264,7 +264,7 @@ final class BaiduAdapter implements AdapterInterface
         return "{$baseUrl}/{$model}?access_token={$token}";
     }
 
-    private function buildStreamUrl(string $token): string
+    private function buildStreamUrl(#[\SensitiveParameter] string $token): string
     {
         $model = $this->resolveModel([]);
         $baseUrl = $this->resolveBaseUrl();

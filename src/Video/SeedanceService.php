@@ -45,7 +45,7 @@ final class SeedanceService
     private object $logger;
 
     public function __construct(
-        string $apiKey,
+        #[\SensitiveParameter] string $apiKey,
         array $options = [],
         ?object $logger = null,
     ) {
@@ -67,7 +67,7 @@ final class SeedanceService
         $this->logger = $logger ?? LogManager::channel('seedance');
     }
 
-    public static function create(string $apiKey, array $options = []): self
+    public static function create(#[\SensitiveParameter] string $apiKey, array $options = []): self
     {
         return new self($apiKey, $options);
     }

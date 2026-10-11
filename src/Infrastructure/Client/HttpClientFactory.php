@@ -60,7 +60,7 @@ final class HttpClientFactory
      * @param array $config 配置选项
      * @return HttpClient HTTP 客户端实例
      */
-    public static function forOpenAI(string $apiKey, array $config = []): HttpClient
+    public static function forOpenAI(#[\SensitiveParameter] string $apiKey, array $config = []): HttpClient
     {
         return self::create(array_merge($config, [
             'auth' => [
@@ -77,7 +77,7 @@ final class HttpClientFactory
      * @param array $config 配置选项
      * @return HttpClient HTTP 客户端实例
      */
-    public static function forAnthropic(string $apiKey, array $config = []): HttpClient
+    public static function forAnthropic(#[\SensitiveParameter] string $apiKey, array $config = []): HttpClient
     {
         return self::create(array_merge($config, [
             'auth' => [

@@ -75,7 +75,7 @@ trait StreamHelper
     /**
      * 验证 API Key 格式
      */
-    protected function validateApiKeyFormat(string $apiKey, string $prefix = ''): bool
+    protected function validateApiKeyFormat(#[\SensitiveParameter] string $apiKey, string $prefix = ''): bool
     {
         if (strlen($apiKey) < 16) {
             return false;

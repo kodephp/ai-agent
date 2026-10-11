@@ -46,7 +46,7 @@ class AgentHub
     private static ?self $instance = null;
 
     public function __construct(
-        string $apiKey,
+        #[\SensitiveParameter] string $apiKey,
         array $config = [],
         ?AdapterInterface $adapter = null,
         ?MultimodalInterface $multimodalAdapter = null,
@@ -67,12 +67,12 @@ class AgentHub
         return $this->apiKey;
     }
 
-    public static function create(string $apiKey, array $config = []): self
+    public static function create(#[\SensitiveParameter] string $apiKey, array $config = []): self
     {
         return new self($apiKey, $config);
     }
 
-    public static function getInstance(?string $apiKey = null, array $config = []): self
+    public static function getInstance(#[\SensitiveParameter] ?string $apiKey = null, array $config = []): self
     {
         if (self::$instance === null && $apiKey !== null) {
             self::$instance = new self($apiKey, $config);

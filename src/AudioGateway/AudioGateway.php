@@ -65,7 +65,7 @@ final class AudioGateway
     /**
      * 便捷：注册 OpenAI TTS 供应商
      */
-    public function addOpenAi(string $apiKey, array $options = [], int $priority = 100): self
+    public function addOpenAi(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100): self
     {
         return $this->addProvider(new Provider\OpenAiTtsProvider($apiKey, $options), $priority);
     }

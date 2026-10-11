@@ -99,7 +99,7 @@ final class VideoGateway
      *
      * @param array<string, mixed> $options version(2.0/2.5)/tier(pro/lite)/resolution 等
      */
-    public function addSeedance(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addSeedance(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         $provider = new SeedanceVideoProvider($apiKey, $options);
         return $this->addProvider($provider, null, $priority, $weight);
@@ -108,7 +108,7 @@ final class VideoGateway
     /**
      * 便捷：添加阿里通义万相视频供应商（文生视频 / 图生视频）
      */
-    public function addWanxiang(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addWanxiang(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         $provider = new WanxiangVideoProvider($apiKey, $options);
         return $this->addProvider($provider, null, $priority, $weight);
@@ -117,7 +117,7 @@ final class VideoGateway
     /**
      * 便捷：添加阿里数字人供应商
      */
-    public function addAliyunAvatar(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addAliyunAvatar(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         $provider = new AliyunAvatarProvider($apiKey, $options);
         return $this->addProvider($provider, null, $priority, $weight);

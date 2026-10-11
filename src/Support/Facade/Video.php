@@ -102,19 +102,19 @@ final class Video extends Facade
         return self::gateway()->report();
     }
 
-    public function addSeedance(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addSeedance(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         self::gateway()->addSeedance($apiKey, $options, $priority, $weight);
         return $this;
     }
 
-    public function addWanxiang(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addWanxiang(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         self::gateway()->addWanxiang($apiKey, $options, $priority, $weight);
         return $this;
     }
 
-    public function addAliyunAvatar(string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
+    public function addAliyunAvatar(#[\SensitiveParameter] string $apiKey, array $options = [], int $priority = 100, float $weight = 1.0): self
     {
         self::gateway()->addAliyunAvatar($apiKey, $options, $priority, $weight);
         return $this;

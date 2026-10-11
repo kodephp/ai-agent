@@ -62,7 +62,7 @@ final class AgentBuilder
     /**
      * 设置 API Key
      */
-    public function withApiKey(string $apiKey): self
+    public function withApiKey(#[\SensitiveParameter] string $apiKey): self
     {
         $this->config['api_key'] = $apiKey;
         return $this;

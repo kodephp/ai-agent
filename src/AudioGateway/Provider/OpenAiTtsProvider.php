@@ -51,7 +51,7 @@ final class OpenAiTtsProvider implements TtsProviderInterface
      * @param array<string, mixed> $options model / voice / instructions / output_dir / timeout / retries
      * @param HttpClientInterface|null $client 测试可注入假客户端
      */
-    public function __construct(string $apiKey, array $options = [], ?HttpClientInterface $client = null)
+    public function __construct(#[\SensitiveParameter] string $apiKey, array $options = [], ?HttpClientInterface $client = null)
     {
         if (empty($apiKey)) {
             throw ConfigurationException::missing('api_key');

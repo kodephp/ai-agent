@@ -35,7 +35,7 @@ final class SeedanceVideoProvider implements VideoProviderInterface
     /**
      * @param array<string, mixed> $options version(2.0/2.5)/tier(pro/lite)/resolution/duration 等
      */
-    public function __construct(string $apiKey, array $options = [])
+    public function __construct(#[\SensitiveParameter] string $apiKey, array $options = [])
     {
         $config = $options;
         $config['api_key'] = $apiKey;

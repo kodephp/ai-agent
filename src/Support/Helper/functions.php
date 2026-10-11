@@ -193,7 +193,7 @@ if (!function_exists('ai_format_tokens')) {
      * @param int $tokens Token 数量
      * @return string 格式化后的数量
      */
-    function ai_format_tokens(int $tokens): string
+    function ai_format_tokens(#[\SensitiveParameter] int $tokens): string
     {
         if ($tokens < 1000) {
             return (string) $tokens;
@@ -534,7 +534,7 @@ if (!function_exists('ai_hub')) {
      * ]);
      * ```
      */
-    function ai_hub(?string $apiKey = null, array $config = []): \Kode\AiAgent\Agent\AgentHub
+    function ai_hub(#[\SensitiveParameter] ?string $apiKey = null, array $config = []): \Kode\AiAgent\Agent\AgentHub
     {
         $key = $apiKey ?? getenv('OPENAI_API_KEY') ?: '';
         return \Kode\AiAgent\Agent\AgentHub::create($key, $config);
@@ -618,7 +618,7 @@ if (!function_exists('ai_collaborate')) {
      * });
      * ```
      */
-    function ai_collaborate(callable $callback, ?string $apiKey = null, array $config = []): array
+    function ai_collaborate(callable $callback, #[\SensitiveParameter] ?string $apiKey = null, array $config = []): array
     {
         $hub = ai_hub($apiKey, $config);
         return $hub->team($callback);
@@ -652,7 +652,7 @@ if (!function_exists('ai_seedance')) {
      * $video = $service->multiShot('风景', 3);
      * ```
      */
-    function ai_seedance(?string $apiKey = null, array $options = []): \Kode\AiAgent\Video\SeedanceService
+    function ai_seedance(#[\SensitiveParameter] ?string $apiKey = null, array $options = []): \Kode\AiAgent\Video\SeedanceService
     {
         $key = $apiKey ?? getenv('SEEDANCE_API_KEY') ?: getenv('OPENAI_API_KEY') ?: '';
         return \Kode\AiAgent\Video\SeedanceService::create($key, $options);
