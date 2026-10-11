@@ -15,3 +15,4 @@ composer.lock
 public/uploads
 .phpunit.cacheCHANGELOG.md
 CHANGELOG.md
+.phpunit.cache/
