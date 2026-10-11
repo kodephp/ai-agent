@@ -56,6 +56,7 @@ final class ModelRouter implements RouterInterface
         $this->budget = $budget ?? new TokenBudget();
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function dispatch(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -86,6 +87,7 @@ final class ModelRouter implements RouterInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -100,6 +102,7 @@ final class ModelRouter implements RouterInterface
         yield from $expert->stream($prompt, $options);
     }
 
+    #[\Override]
     public function registerExpert(ExpertInterface $expert): self
     {
         $this->experts[] = $expert;
@@ -112,6 +115,7 @@ final class ModelRouter implements RouterInterface
         return $this;
     }
 
+    #[\Override]
     public function registerExperts(iterable $experts): self
     {
         foreach ($experts as $expert) {
@@ -120,6 +124,7 @@ final class ModelRouter implements RouterInterface
         return $this;
     }
 
+    #[\Override]
     public function select(RoutingContext $context): ExpertInterface
     {
         $candidates = $this->healthyExperts();
@@ -131,11 +136,13 @@ final class ModelRouter implements RouterInterface
         return $this->strategy->select($candidates, $context);
     }
 
+    #[\Override]
     public function experts(): array
     {
         return $this->experts;
     }
 
+    #[\Override]
     public function statistics(): array
     {
         return $this->statistics;

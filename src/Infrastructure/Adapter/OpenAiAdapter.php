@@ -36,6 +36,7 @@ final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
         $this->config['base_url'] = $this->ensureHttps($this->config['base_url'] ?? self::BASE_URL);
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -62,6 +63,7 @@ final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -91,6 +93,7 @@ final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'openai';
@@ -191,6 +194,7 @@ final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
         return $this->config['base_url'] ?? self::BASE_URL;
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function generateImage(string $prompt, array $options = []): ImageResponse
     {
@@ -223,12 +227,14 @@ final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function editImage(string $image, string $prompt, array $options = []): ImageResponse
     {
         throw new PlatformException('图像编辑功能暂未实现', 1004, ['method' => 'editImage']);
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function generateImageVariation(string $image, array $options = []): ImageResponse
     {

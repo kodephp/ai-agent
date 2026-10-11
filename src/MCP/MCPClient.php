@@ -26,6 +26,7 @@ final class MCPClient implements MCPClientInterface
         ], $config);
     }
 
+    #[\Override]
     public function connect(string $uri): bool
     {
         if (trim($uri) === '') {
@@ -54,6 +55,7 @@ final class MCPClient implements MCPClientInterface
         return true;
     }
 
+    #[\Override]
     public function disconnect(): void
     {
         $this->connected = false;
@@ -61,22 +63,26 @@ final class MCPClient implements MCPClientInterface
         $this->serverInfo = [];
     }
 
+    #[\Override]
     public function isConnected(): bool
     {
         return $this->connected;
     }
 
+    #[\Override]
     public function serverInfo(): array
     {
         return $this->serverInfo;
     }
 
+    #[\Override]
     public function listTools(): array
     {
         $result = $this->request('tools/list');
         return $result['tools'] ?? [];
     }
 
+    #[\Override]
     public function callTool(string $name, array $arguments = []): mixed
     {
         $result = $this->request('tools/call', [
@@ -91,18 +97,21 @@ final class MCPClient implements MCPClientInterface
         return $result['content'][0]['text'] ?? $result['content'];
     }
 
+    #[\Override]
     public function listResources(): array
     {
         $result = $this->request('resources/list');
         return $result['resources'] ?? [];
     }
 
+    #[\Override]
     public function getResource(string $uri): string
     {
         $result = $this->request('resources/read', ['uri' => $uri]);
         return (string) ($result['contents'][0]['text'] ?? '');
     }
 
+    #[\Override]
     public function sendRequest(array $request): array
     {
         if (!$this->connected || $this->serverUri === null) {

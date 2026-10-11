@@ -78,21 +78,25 @@ final class OpenAiTtsProvider implements TtsProviderInterface
         ], $options);
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'openai';
     }
 
+    #[\Override]
     public function model(): string
     {
         return $this->model;
     }
 
+    #[\Override]
     public function supportedVoices(): array
     {
         return ['alloy', 'ash', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer'];
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function synthesize(string $text, array $options = []): AudioResponse
     {
@@ -163,6 +167,7 @@ final class OpenAiTtsProvider implements TtsProviderInterface
         }
     }
 
+    #[\Override]
     public function estimateCost(array $options = []): float
     {
         $model = $options['model'] ?? $this->model;

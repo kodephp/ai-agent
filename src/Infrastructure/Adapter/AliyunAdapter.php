@@ -40,6 +40,7 @@ final class AliyunAdapter implements AdapterInterface
         $this->apiKey = $this->resolveApiKey();
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -70,6 +71,7 @@ final class AliyunAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -104,6 +106,7 @@ final class AliyunAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'aliyun';

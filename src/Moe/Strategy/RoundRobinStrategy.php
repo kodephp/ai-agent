@@ -18,6 +18,7 @@ final class RoundRobinStrategy implements RoutingStrategyInterface
 {
     private int $cursor = 0;
 
+    #[\Override]
     public function select(array $candidates, RoutingContext $context): ExpertInterface
     {
         if ($candidates === []) {
@@ -29,6 +30,7 @@ final class RoundRobinStrategy implements RoutingStrategyInterface
         return $expert;
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'round_robin';

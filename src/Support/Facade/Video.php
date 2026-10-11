@@ -48,11 +48,13 @@ final class Video extends Facade
 
     private static ?VideoGateway $default = null;
 
+    #[\Override]
     protected static function id(): string
     {
         return 'video';
     }
 
+    #[\Override]
     public static function getInstance(): object
     {
         return new self();

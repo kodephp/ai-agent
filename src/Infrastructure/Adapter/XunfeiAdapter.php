@@ -60,6 +60,7 @@ final class XunfeiAdapter implements AdapterInterface
         $this->apiSecret = $this->config['api_secret'] ?? $this->apiKey?->secret();
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -89,6 +90,7 @@ final class XunfeiAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -128,6 +130,7 @@ final class XunfeiAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'xunfei';

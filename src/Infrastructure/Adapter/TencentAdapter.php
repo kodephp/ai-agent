@@ -55,6 +55,7 @@ final class TencentAdapter implements AdapterInterface
         $this->secretKey = $this->config['secret_key'] ?? $this->apiKey?->secret();
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -88,6 +89,7 @@ final class TencentAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -126,6 +128,7 @@ final class TencentAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'tencent';

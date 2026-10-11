@@ -50,6 +50,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function capabilities(): array
     {
@@ -59,6 +60,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function supports(MultimodalCapability $capability): bool
     {
@@ -68,6 +70,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generate(string $prompt, array $options = []): mixed
     {
@@ -86,6 +89,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generateImage(string $prompt, array $options = []): ImageResponse
     {
@@ -99,6 +103,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function editImage(string $image, string $prompt, array $options = []): ImageResponse
     {
@@ -112,6 +117,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generateImageVariation(string $image, array $options = []): ImageResponse
     {
@@ -125,6 +131,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generateVideo(string $prompt, array $options = []): VideoResponse
     {
@@ -138,6 +145,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {
@@ -151,12 +159,14 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     abstract public function generateAvatarVideo(string $text, array $options = []): AvatarResponse;
 
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generateWithCustomVideo(string $text, MediaFile $videoFile, array $options = []): AvatarResponse
     {
@@ -170,6 +180,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generateWithCustomAudio(MediaFile $audioFile, array $options = []): AvatarResponse
     {
@@ -183,6 +194,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function generateAvatarVideoAsync(string $text, array $options = []): string
     {
@@ -198,6 +210,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function getProgress(string $taskId): Progress
     {
@@ -207,6 +220,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function listAvatars(array $options = []): array
     {
@@ -231,6 +245,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function listVoices(array $options = []): array
     {
@@ -262,6 +277,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function getAvatar(string $avatarId): array
     {
@@ -277,6 +293,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     #[\NoDiscard]
     public function getVoice(string $voiceId): array
     {
@@ -292,6 +309,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function getDownloadPrompt(AvatarResponse $response): string
     {
         $prompt = <<<TEXT

@@ -17,11 +17,13 @@ use Kode\AiAgent\VideoGateway\VideoExpert;
  */
 final class CapabilityAwareVideoStrategy implements VideoRoutingStrategyInterface
 {
+    #[\Override]
     public function name(): string
     {
         return 'capability_aware';
     }
 
+    #[\Override]
     public function select(
         array $experts,
         string $capability,

@@ -34,11 +34,13 @@ class PlatformException extends \RuntimeException implements AiAgentException
         parent::__construct($message, $errorCode, $previous);
     }
 
+    #[\Override]
     public function errorCode(): int
     {
         return $this->errorCode;
     }
 
+    #[\Override]
     public function context(): array
     {
         return $this->context;

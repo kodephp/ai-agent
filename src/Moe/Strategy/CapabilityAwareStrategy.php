@@ -17,6 +17,7 @@ use Kode\AiAgent\Moe\RoutingContext;
  */
 final class CapabilityAwareStrategy implements RoutingStrategyInterface
 {
+    #[\Override]
     public function select(array $candidates, RoutingContext $context): ExpertInterface
     {
         $filtered = $candidates;
@@ -73,6 +74,7 @@ final class CapabilityAwareStrategy implements RoutingStrategyInterface
         return $this->weightedRandom($topTier);
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'capability_aware';

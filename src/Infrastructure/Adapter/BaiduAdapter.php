@@ -63,6 +63,7 @@ final class BaiduAdapter implements AdapterInterface
         $this->tokenExpireTime = 0;
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -96,6 +97,7 @@ final class BaiduAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -133,6 +135,7 @@ final class BaiduAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'baidu';

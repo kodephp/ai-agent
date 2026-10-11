@@ -52,6 +52,7 @@ final class MCPServer implements MCPServerInterface
         ], $config);
     }
 
+    #[\Override]
     public function registerTool(
         string $name,
         string $description,
@@ -66,6 +67,7 @@ final class MCPServer implements MCPServerInterface
         ];
     }
 
+    #[\Override]
     public function registerResource(
         string $uri,
         callable $provider,
@@ -78,6 +80,7 @@ final class MCPServer implements MCPServerInterface
         ];
     }
 
+    #[\Override]
     public function handle(array $request): array
     {
         $method = $request['method'] ?? '';
@@ -101,6 +104,7 @@ final class MCPServer implements MCPServerInterface
         }
     }
 
+    #[\Override]
     public function info(): array
     {
         return [
@@ -114,6 +118,7 @@ final class MCPServer implements MCPServerInterface
         ];
     }
 
+    #[\Override]
     public function listTools(): array
     {
         return array_map(function ($tool) {
@@ -125,6 +130,7 @@ final class MCPServer implements MCPServerInterface
         }, array_values($this->tools));
     }
 
+    #[\Override]
     public function listResources(): array
     {
         return array_map(function ($resource) {

@@ -47,49 +47,58 @@ final class Expert implements ExpertInterface
         private readonly int $unhealthyTtlSec = 60,
     ) {}
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
         return $this->adapter->send($prompt, $options);
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
         return $this->adapter->stream($prompt, $options);
     }
 
+    #[\Override]
     public function id(): string
     {
         return $this->id ?? $this->platform() . ':' . $this->model();
     }
 
+    #[\Override]
     public function platform(): string
     {
         return $this->adapter->name();
     }
 
+    #[\Override]
     public function model(): string
     {
         $config = $this->adapterConfig();
         return (string) ($config['model'] ?? 'default');
     }
 
+    #[\Override]
     public function capabilities(): array
     {
         return $this->capabilities;
     }
 
+    #[\Override]
     public function priority(): int
     {
         return $this->priority;
     }
 
+    #[\Override]
     public function weight(): float
     {
         return max(0.0, $this->weight);
     }
 
+    #[\Override]
     public function isHealthy(): bool
     {
         if ($this->healthy) {
@@ -108,6 +117,7 @@ final class Expert implements ExpertInterface
         return false;
     }
 
+    #[\Override]
     public function markUnhealthy(string $reason = ''): void
     {
         $this->healthy = false;
@@ -118,6 +128,7 @@ final class Expert implements ExpertInterface
             : null;
     }
 
+    #[\Override]
     public function markHealthy(): void
     {
         $this->healthy = true;
@@ -125,6 +136,7 @@ final class Expert implements ExpertInterface
         $this->unhealthyUntil = null;
     }
 
+    #[\Override]
     public function adapter(): AdapterInterface
     {
         return $this->adapter;

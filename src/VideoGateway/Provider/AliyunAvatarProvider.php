@@ -59,16 +59,19 @@ final class AliyunAvatarProvider implements VideoProviderInterface
         ]);
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'aliyun_avatar';
     }
 
+    #[\Override]
     public function model(): string
     {
         return self::DEFAULT_MODEL;
     }
 
+    #[\Override]
     public function supportedCapabilities(): array
     {
         return [
@@ -80,18 +83,21 @@ final class AliyunAvatarProvider implements VideoProviderInterface
         ];
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function textToVideo(string $prompt, array $options = []): VideoResponse
     {
         throw new PlatformException('数字人供应商不支持文生视频，请使用 Seedance / 通义万相');
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {
         throw new PlatformException('数字人供应商不支持图生视频，请使用 Seedance / 通义万相');
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function generateAvatar(string $text, array $options = []): VideoResponse
     {
@@ -111,6 +117,7 @@ final class AliyunAvatarProvider implements VideoProviderInterface
         return $this->waitForCompletion($taskId, $options);
     }
 
+    #[\Override]
     public function getProgress(string $taskId): array
     {
         try {
@@ -124,6 +131,7 @@ final class AliyunAvatarProvider implements VideoProviderInterface
         }
     }
 
+    #[\Override]
     public function estimateCost(array $options = []): float
     {
         return self::DEFAULT_COST;

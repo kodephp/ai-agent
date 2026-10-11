@@ -33,6 +33,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         private int $dimension = 1536,
     ) {}
 
+    #[\Override]
     public function upsert(string $id, array $vector, array $metadata = []): bool
     {
         $this->validateVector($vector);
@@ -43,6 +44,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return true;
     }
 
+    #[\Override]
     public function upsertBatch(array $vectors): int
     {
         $count = 0;
@@ -60,6 +62,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return $count;
     }
 
+    #[\Override]
     public function search(array $vector, int $limit = 10, array $filters = []): array
     {
         $this->validateVector($vector);
@@ -96,6 +99,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return $results;
     }
 
+    #[\Override]
     public function get(string $id): ?array
     {
         if (!isset($this->vectors[$id])) {
@@ -109,6 +113,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         ];
     }
 
+    #[\Override]
     public function getBatch(array $ids): array
     {
         $results = [];
@@ -123,6 +128,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return $results;
     }
 
+    #[\Override]
     public function delete(string $id): bool
     {
         if (!isset($this->vectors[$id])) {
@@ -134,6 +140,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return true;
     }
 
+    #[\Override]
     public function deleteBatch(array $ids): int
     {
         $count = 0;
@@ -147,6 +154,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return $count;
     }
 
+    #[\Override]
     public function count(array $filters = []): int
     {
         if (empty($filters)) {
@@ -163,6 +171,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return $count;
     }
 
+    #[\Override]
     public function clear(): bool
     {
         $this->vectors = [];
@@ -171,6 +180,7 @@ final class MemoryVectorStore implements VectorStoreInterface
         return true;
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'memory';

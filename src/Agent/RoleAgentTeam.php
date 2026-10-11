@@ -46,12 +46,14 @@ class RoleAgentTeam implements AgentTeamInterface
         return $this;
     }
 
+    #[\Override]
     public function auto(string $task, array $options = []): ResponseInterface
     {
         $role = $this->resolveRoleWithRoute($task);
         return $this->dispatch($role, $task, $options);
     }
 
+    #[\Override]
     public function run(string $goal, array $workflow, array $options = []): array
     {
         $this->log('info', '工作流开始', [
@@ -108,6 +110,7 @@ class RoleAgentTeam implements AgentTeamInterface
         ];
     }
 
+    #[\Override]
     public function parallel(array $tasks, array $options = []): array
     {
         $this->log('info', '并行任务开始', ['count' => count($tasks)]);

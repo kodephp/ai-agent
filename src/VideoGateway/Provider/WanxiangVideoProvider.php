@@ -69,16 +69,19 @@ final class WanxiangVideoProvider implements VideoProviderInterface
         ]);
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'wanxiang';
     }
 
+    #[\Override]
     public function model(): string
     {
         return $this->config['model'] ?? self::DEFAULT_MODEL_T2V;
     }
 
+    #[\Override]
     public function supportedCapabilities(): array
     {
         return [
@@ -89,6 +92,7 @@ final class WanxiangVideoProvider implements VideoProviderInterface
         ];
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function textToVideo(string $prompt, array $options = []): VideoResponse
     {
@@ -103,6 +107,7 @@ final class WanxiangVideoProvider implements VideoProviderInterface
         return $this->waitForCompletion($taskId, $model, $options);
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {
@@ -122,12 +127,14 @@ final class WanxiangVideoProvider implements VideoProviderInterface
         return $this->waitForCompletion($taskId, $model, $options);
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function generateAvatar(string $text, array $options = []): VideoResponse
     {
         throw new PlatformException('通义万相不支持数字人生成，请使用阿里数字人供应商');
     }
 
+    #[\Override]
     public function getProgress(string $taskId): array
     {
         try {
@@ -141,6 +148,7 @@ final class WanxiangVideoProvider implements VideoProviderInterface
         }
     }
 
+    #[\Override]
     public function estimateCost(array $options = []): float
     {
         $model = $options['model'] ?? self::DEFAULT_MODEL_T2V;

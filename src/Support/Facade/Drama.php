@@ -44,11 +44,13 @@ final class Drama extends Facade
 
     private static ?DramaDirector $default = null;
 
+    #[\Override]
     protected static function id(): string
     {
         return 'drama';
     }
 
+    #[\Override]
     public static function getInstance(): object
     {
         return new self();

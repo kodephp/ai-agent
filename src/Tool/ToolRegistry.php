@@ -164,6 +164,7 @@ final class ToolRegistry implements \Countable
     /**
      * 获取工具数量
      */
+    #[\Override]
     public function count(): int
     {
         return count($this->tools);

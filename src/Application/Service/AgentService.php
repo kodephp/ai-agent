@@ -99,6 +99,7 @@ final class AgentService implements PipelineInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function pipe(callable $stage): static
     {
         $this->stages[] = $stage;
@@ -108,6 +109,7 @@ final class AgentService implements PipelineInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function process(mixed $input): mixed
     {
         if ($input instanceof PromptInterface) {
@@ -124,6 +126,7 @@ final class AgentService implements PipelineInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function reset(): static
     {
         $this->stages = [];

@@ -103,6 +103,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         return new self($client, array_merge($config, ['api_key' => $apiKey]));
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -128,6 +129,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -165,11 +167,13 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'seedance';
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function generateVideo(string $prompt, array $options = []): VideoResponse
     {
@@ -229,6 +233,7 @@ class SeedanceAdapter implements AdapterInterface, VideoGeneratorInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {

@@ -48,11 +48,13 @@ final class MoE extends Facade
 
     private static ?MoEGateway $default = null;
 
+    #[\Override]
     protected static function id(): string
     {
         return 'moe';
     }
 
+    #[\Override]
     public static function getInstance(): object
     {
         return new self();

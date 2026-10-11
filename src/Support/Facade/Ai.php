@@ -53,6 +53,7 @@ final class Ai extends Facade
     /**
      * 获取门面标识
      */
+    #[\Override]
     protected static function id(): string
     {
         return 'ai';
@@ -61,6 +62,7 @@ final class Ai extends Facade
     /**
      * 获取实例
      */
+    #[\Override]
     public static function getInstance(): object
     {
         return new self();

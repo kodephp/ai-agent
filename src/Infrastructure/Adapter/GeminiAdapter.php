@@ -32,6 +32,7 @@ final class GeminiAdapter implements AdapterInterface
         $this->config['base_url'] = $this->ensureHttps($this->config['base_url'] ?? self::BASE_URL);
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function send(PromptInterface $prompt, array $options = []): ResponseInterface
     {
@@ -60,6 +61,7 @@ final class GeminiAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function stream(PromptInterface $prompt, array $options = []): \Generator
     {
@@ -88,6 +90,7 @@ final class GeminiAdapter implements AdapterInterface
         }
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'gemini';

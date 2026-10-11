@@ -21,11 +21,13 @@ final class CostAwareVideoStrategy implements VideoRoutingStrategyInterface
         private readonly VideoPriceTable $priceTable,
     ) {}
 
+    #[\Override]
     public function name(): string
     {
         return 'cost_aware';
     }
 
+    #[\Override]
     public function select(
         array $experts,
         string $capability,

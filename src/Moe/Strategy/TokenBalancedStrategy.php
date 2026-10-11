@@ -33,6 +33,7 @@ final class TokenBalancedStrategy implements RoutingStrategyInterface
         $this->efficiency = $efficiency ?? new ModelTokenEfficiency();
     }
 
+    #[\Override]
     public function select(array $candidates, RoutingContext $context): ExpertInterface
     {
         $filtered = $this->filterCandidates($candidates, $context);
@@ -50,6 +51,7 @@ final class TokenBalancedStrategy implements RoutingStrategyInterface
         return $scored[0]['expert'];
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'token_balanced';

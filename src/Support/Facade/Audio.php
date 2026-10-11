@@ -41,11 +41,13 @@ final class Audio extends Facade
 
     private static ?AudioGateway $default = null;
 
+    #[\Override]
     protected static function id(): string
     {
         return 'audio';
     }
 
+    #[\Override]
     public static function getInstance(): object
     {
         return new self();

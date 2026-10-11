@@ -17,11 +17,13 @@ final class RoundRobinVideoStrategy implements VideoRoutingStrategyInterface
 {
     private int $index = 0;
 
+    #[\Override]
     public function name(): string
     {
         return 'round_robin';
     }
 
+    #[\Override]
     public function select(
         array $experts,
         string $capability,

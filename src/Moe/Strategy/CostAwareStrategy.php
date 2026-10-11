@@ -22,6 +22,7 @@ final class CostAwareStrategy implements RoutingStrategyInterface
         private readonly ModelPriceTable $priceTable,
     ) {}
 
+    #[\Override]
     public function select(array $candidates, RoutingContext $context): ExpertInterface
     {
         $filtered = $candidates;
@@ -71,6 +72,7 @@ final class CostAwareStrategy implements RoutingStrategyInterface
         return $scored[0]['expert'];
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'cost_aware';

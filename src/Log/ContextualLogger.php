@@ -16,6 +16,7 @@ final class ContextualLogger implements LoggerInterface
         private array $context = [],
     ) {}
 
+    #[\Override]
     public function log($level, \Stringable|string $message, array $context = []): void
     {
         $mergedContext = array_merge($this->context, $context);

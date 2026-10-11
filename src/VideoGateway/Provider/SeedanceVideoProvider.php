@@ -59,16 +59,19 @@ final class SeedanceVideoProvider implements VideoProviderInterface
         ], $options);
     }
 
+    #[\Override]
     public function name(): string
     {
         return 'seedance';
     }
 
+    #[\Override]
     public function model(): string
     {
         return $this->model;
     }
 
+    #[\Override]
     public function supportedCapabilities(): array
     {
         return [
@@ -79,18 +82,21 @@ final class SeedanceVideoProvider implements VideoProviderInterface
         ];
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function textToVideo(string $prompt, array $options = []): VideoResponse
     {
         return $this->adapter->generateVideo($prompt, $this->merge($options));
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function imageToVideo(string $image, ?string $prompt = null, array $options = []): VideoResponse
     {
         return $this->adapter->imageToVideo($image, $prompt, $this->merge($options));
     }
 
+    #[\Override]
     #[\NoDiscard]
     public function generateAvatar(string $text, array $options = []): VideoResponse
     {
@@ -99,11 +105,13 @@ final class SeedanceVideoProvider implements VideoProviderInterface
         );
     }
 
+    #[\Override]
     public function getProgress(string $taskId): array
     {
         return $this->adapter->getTaskStatus($taskId);
     }
 
+    #[\Override]
     public function estimateCost(array $options = []): float
     {
         $model = $options['model'] ?? $this->model;

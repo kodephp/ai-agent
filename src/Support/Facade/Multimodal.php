@@ -59,11 +59,13 @@ final class Multimodal extends Facade
     private static ?FileUploaderInterface $defaultFileUploader = null;
     private static ?LoggerInterface $defaultLogger = null;
 
+    #[\Override]
     protected static function id(): string
     {
         return 'multimodal';
     }
 
+    #[\Override]
     public static function getInstance(): object
     {
         return new self();
