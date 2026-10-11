@@ -45,12 +45,6 @@ final class JsonParser
      */
     public static function isValid(string $json): bool
     {
-        if (function_exists('json_validate')) {
-            return json_validate($json);
-        }
-
-        // PHP 8.2 及以下兜底
-        json_decode($json);
-        return json_last_error() === JSON_ERROR_NONE;
+        return json_validate($json);
     }
 }
