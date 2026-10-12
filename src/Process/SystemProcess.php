@@ -29,7 +29,8 @@ use Kode\AiAgent\Log\LogManager;
  */
 final class SystemProcess
 {
-    private string $command;
+    /** @var string|list<string> */
+    private string|array $command;
     private array $options;
     private ?int $pid = null;
     /** @var resource|false */
@@ -46,15 +47,31 @@ final class SystemProcess
     /**
      * 创建进程实例
      *
-     * @param string $command 要执行的命令
+     * @param string|array<mixed> $command 要执行的命令；推荐传数组（元素为
+     *   argv 各段），此时不经 shell 解析，天然免疫命令注入；字符串形式
+     *   会经 shell 执行，调用方必须自行保证参数安全
      * @param array $options 配置选项
      *   - cwd: 工作目录
      *   - env: 环境变量
      *   - timeout: 超时时间（秒），默认 300
      *   - buffer_size: 缓冲区大小，默认 8192
      */
-    public function __construct(string $command, array $options = [])
+    public function __construct(string|array $command, array $options = [])
     {
+        if (is_array($command)) {
+            $command = array_values($command);
+            if ($command === [] || !is_string($command[0])) {
+                throw new \InvalidArgumentException('命令数组不能为空且首元素必须为可执行文件');
+            }
+            foreach ($command as $segment) {
+                if (!is_string($segment)) {
+                    throw new \InvalidArgumentException('命令数组元素必须全部为字符串');
+                }
+            }
+        } elseif (trim($command) === '') {
+            throw new \InvalidArgumentException('命令不能为空');
+        }
+
         $this->command = $command;
         $this->options = array_merge([
             'cwd' => null,
@@ -94,7 +111,7 @@ final class SystemProcess
         );
 
         if ($this->handle === false) {
-            throw new \RuntimeException("进程启动失败: {$this->command}");
+            throw new \RuntimeException("进程启动失败: {$this->commandString()}");
         }
 
         $this->pipes = $pipes;
@@ -109,7 +126,7 @@ final class SystemProcess
 
         LogManager::info('进程已启动', [
             'pid' => $this->pid,
-            'command' => $this->command,
+            'command' => $this->commandString(),
         ]);
 
         return $this;
@@ -307,5 +324,15 @@ final class SystemProcess
             }
             $this->handle = false;
         }
+    }
+
+    /**
+     * 命令的可读字符串形式（日志/异常用）
+     */
+    private function commandString(): string
+    {
+        return is_array($this->command)
+            ? implode(' ', array_map('escapeshellarg', $this->command))
+            : $this->command;
     }
 }

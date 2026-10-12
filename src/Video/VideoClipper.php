@@ -4,142 +4,7 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Video;
 
-/**
- * 剪辑操作类型枚举
- */
-enum ClipOperation: string
-{
-    case CUT = 'cut';
-    case TRIM = 'trim';
-    case SPLIT = 'split';
-    case SPEED = 'speed';
-    case REVERSE = 'reverse';
-    case ROTATE = 'rotate';
-    case CROP = 'crop';
-    case SCALE = 'scale';
-    case PAD = 'pad';
-    case DELAY = 'delay';
-}
-
-/**
- * 视频剪辑操作
- */
-final class ClipOperationConfig
-{
-    public function __construct(
-        public ClipOperation $operation,
-        public array $params = [],
-        public ?float $startTime = null,
-        public ?float $endTime = null,
-    ) {}
-
-    /**
-     * 获取 FFmpeg 滤镜字符串
-     */
-    public function toFFmpegFilter(): string
-    {
-        return match ($this->operation) {
-            ClipOperation::CUT => $this->buildCutFilter(),
-            ClipOperation::TRIM => $this->buildTrimFilter(),
-            ClipOperation::SPLIT => $this->buildSplitFilter(),
-            ClipOperation::SPEED => $this->buildSpeedFilter(),
-            ClipOperation::REVERSE => 'reverse',
-            ClipOperation::ROTATE => $this->buildRotateFilter(),
-            ClipOperation::CROP => $this->buildCropFilter(),
-            ClipOperation::SCALE => $this->buildScaleFilter(),
-            ClipOperation::PAD => $this->buildPadFilter(),
-            ClipOperation::DELAY => $this->buildDelayFilter(),
-        };
-    }
-
-    private function buildCutFilter(): string
-    {
-        $start = $this->startTime ?? 0;
-        $duration = ($this->endTime ?? 0) - $start;
-        return "trim=start={$start}:duration={$duration},setpts=PTS-STARTPTS";
-    }
-
-    private function buildTrimFilter(): string
-    {
-        return $this->buildCutFilter();
-    }
-
-    private function buildSplitFilter(): string
-    {
-        $count = $this->params['count'] ?? 2;
-        return "split={$count}";
-    }
-
-    private function buildSpeedFilter(): string
-    {
-        $speed = $this->params['speed'] ?? 1.0;
-        $pts = 1.0 / $speed;
-        return "setpts={$pts}*PTS";
-    }
-
-    private function buildRotateFilter(): string
-    {
-        $angle = $this->params['angle'] ?? 0;
-        $angleRad = $angle * M_PI / 180;
-        $sin = sin($angleRad);
-        $cos = cos($angleRad);
-
-        if ($angle === 90) {
-            return 'transpose=1';
-        } elseif ($angle === 180) {
-            return 'transpose=2,transpose=2';
-        } elseif ($angle === 270) {
-            return 'transpose=2';
-        }
-
-        return "frei0r=rotate:{$angle}*pi/180";
-    }
-
-    private function buildCropFilter(): string
-    {
-        $width = $this->params['width'] ?? 'iw';
-        $height = $this->params['height'] ?? 'ih';
-        $x = $this->params['x'] ?? 0;
-        $y = $this->params['y'] ?? 0;
-
-        return "crop={$width}:{$height}:{$x}:{$y}";
-    }
-
-    private function buildScaleFilter(): string
-    {
-        $width = $this->params['width'] ?? -1;
-        $height = $this->params['height'] ?? -1;
-
-        return "scale={$width}:{$height}";
-    }
-
-    private function buildPadFilter(): string
-    {
-        $width = $this->params['width'] ?? 1920;
-        $height = $this->params['height'] ?? 1080;
-        $x = $this->params['x'] ?? '(ow-iw)/2';
-        $y = $this->params['y'] ?? '(oh-ih)/2';
-        $color = $this->params['color'] ?? 'black';
-
-        return "pad={$width}:{$height}:{$x}:{$y}:{$color}";
-    }
-
-    private function buildDelayFilter(): string
-    {
-        $delay = $this->params['delay'] ?? 0;
-        return "adelay={$delay}|{$delay}";
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'operation' => $this->operation->value,
-            'params' => $this->params,
-            'start_time' => $this->startTime,
-            'end_time' => $this->endTime,
-        ];
-    }
-}
+use Kode\AiAgent\Support\FFmpegEscaper;
 
 /**
  * 视频剪辑器
@@ -228,17 +93,23 @@ final class VideoClipper
             mkdir($outputDir, 0755, true);
         }
 
+        // 容器格式白名单：直接拼进 shell 命令，仅放行简单容器扩展名
+        $format = strtolower((string) ($options['format'] ?? 'mp4'));
+        if (preg_match('/^[a-z0-9]{1,6}$/', $format) !== 1) {
+            $format = 'mp4';
+        }
+
         $command = sprintf(
             'ffmpeg -y -i %s -f segment -segment_time %d -c copy %s/segment_%%03d.%s 2>/dev/null',
             escapeshellarg($inputPath),
             (int) $chunkDuration,
             escapeshellarg($outputDir),
-            $options['format'] ?? 'mp4'
+            $format
         );
 
         exec($command, $outputLines, $returnCode);
 
-        $files = glob($outputDir . '/segment_*.mp4');
+        $files = glob($outputDir . '/segment_*.' . $format);
         sort($files);
 
         $result = [];
@@ -378,12 +249,17 @@ final class VideoClipper
     {
         $outputPath = $options['output'] ?? $this->generateOutputPath($inputPath);
 
-        $command = sprintf(
-            'ffmpeg -y -i %s -vf "pad=%d:%d:(ow-iw)/2:(oh-ih)/2:%s" %s 2>/dev/null',
-            escapeshellarg($inputPath),
+        $vf = sprintf(
+            'pad=%d:%d:(ow-iw)/2:(oh-ih)/2:%s',
             $width,
             $height,
-            $color,
+            FFmpegEscaper::color($color)
+        );
+
+        $command = sprintf(
+            'ffmpeg -y -i %s -vf %s %s 2>/dev/null',
+            escapeshellarg($inputPath),
+            escapeshellarg($vf),
             escapeshellarg($outputPath)
         );
 
@@ -417,9 +293,9 @@ final class VideoClipper
         $filterComplex = implode(',', $filters);
 
         $command = sprintf(
-            'ffmpeg -y -i %s -vf "%s" %s 2>/dev/null',
+            'ffmpeg -y -i %s -vf %s %s 2>/dev/null',
             escapeshellarg($inputPath),
-            $filterComplex,
+            escapeshellarg($filterComplex),
             escapeshellarg($outputPath)
         );
 
@@ -438,7 +314,7 @@ final class VideoClipper
             escapeshellarg($videoPath)
         );
 
-        $output = shell_exec($command);
+        $output = (string) shell_exec($command);
         $info = json_decode($output, true);
 
         if ($info === null) {

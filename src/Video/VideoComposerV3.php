@@ -6,6 +6,7 @@ namespace Kode\AiAgent\Video;
 
 use Kode\AiAgent\Drama\{FrameVideo, SceneVideo, TransitionEffect, TransitionManager, TransitionType};
 use Kode\AiAgent\Log\LogManager;
+use Kode\AiAgent\Support\FFmpegEscaper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -465,11 +466,11 @@ final class VideoComposerV3
         if ($scene->subtitle !== null && $font !== null && is_file($font)) {
             $text = str_replace(["\r", "\n"], [' ', ' '], (string) $scene->subtitle);
             $fontSize = $this->config['subtitle_font_size'] ?? 36;
-            $color = $this->config['subtitle_color'] ?? 'white';
+            $color = FFmpegEscaper::color((string) ($this->config['subtitle_color'] ?? 'white'), 'white');
             $subFilter = sprintf(
                 ',drawtext=fontfile=%s:text=%s:fontsize=%d:fontcolor=%s:x=(w-text_w)/2:y=h-th-40',
-                escapeshellarg($font),
-                escapeshellarg($text),
+                FFmpegEscaper::quote($font),
+                FFmpegEscaper::quote($text),
                 $fontSize,
                 $color
             );
@@ -706,17 +707,24 @@ final class VideoComposerV3
         }
 
         $output = $this->generateOutputPath();
-        $fontSize = $this->subtitle['font_size'] ?? 36;
-        $color = $this->subtitle['color'] ?? 'white';
+        $fontSize = (int) ($this->subtitle['font_size'] ?? 36);
+        $color = FFmpegEscaper::color((string) ($this->subtitle['color'] ?? 'white'), 'white');
         $text = str_replace(["\r", "\n"], [' ', ' '], (string) $this->subtitle['text']);
 
-        $command = sprintf(
-            "ffmpeg -y -i %s -vf \"drawtext=fontfile=%s:text=%s:fontsize=%d:fontcolor=%s:x=(w-text_w)/2:y=h-th-30\" -c:v %s -preset %s -c:a copy %s 2>/dev/null",
-            escapeshellarg($inputPath),
-            escapeshellarg($font),
-            escapeshellarg($text),
+        // 滤镜串整体交由 escapeshellarg() 进入 shell，参数值用 ffmpeg 单引号
+        // 语法引用：避免 escapeshellarg() 嵌在双引号命令片段里被 `"` 破出。
+        $vf = sprintf(
+            'drawtext=fontfile=%s:text=%s:fontsize=%d:fontcolor=%s:x=(w-text_w)/2:y=h-th-30',
+            FFmpegEscaper::quote($font),
+            FFmpegEscaper::quote($text),
             $fontSize,
-            $color,
+            $color
+        );
+
+        $command = sprintf(
+            'ffmpeg -y -i %s -vf %s -c:v %s -preset %s -c:a copy %s 2>/dev/null',
+            escapeshellarg($inputPath),
+            escapeshellarg($vf),
             escapeshellarg($this->config['video_codec']),
             escapeshellarg($this->config['preset']),
             escapeshellarg($output)

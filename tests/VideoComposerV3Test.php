@@ -214,6 +214,35 @@ final class VideoComposerV3Test extends TestCase
         self::assertNotEmpty($out, '合成视频缺少音轨（配音未混流）');
     }
 
+    public function testSubtitleWithShellMetaCharactersIsSafe(): void
+    {
+        $font = $this->findFont();
+        if ($font === '') {
+            self::markTestSkipped('未找到可用字体');
+        }
+
+        $clip = $this->makeClip('meta1', 'red', 2);
+        $marker = $this->tmpDir . '/pwned_sub';
+        $evil = 'It\'s "special": a,b; touch ' . $marker . ' \ backslash';
+
+        $composer = new VideoComposerV3(new NullLogger(), 4, [
+            'resolution' => '320x240',
+            'fps' => 30,
+            'output_dir' => $this->tmpDir . '/out',
+            'temp_dir' => $this->tmpDir . '/temp',
+            'subtitle_font' => $font,
+            'subtitle_color' => 'white"; touch ' . $marker . '; echo "',
+        ]);
+        // 同时走两条字幕路径：逐场景 prepareSceneVideo 与整体 addSubtitle
+        $composer->addSceneVideo(new SceneVideo('seg-1', 1, $clip, 2.0, subtitle: $evil));
+        $composer->setSubtitle($evil, ['font_size' => 18, 'color' => 'red,text=1']);
+
+        $result = $composer->compose();
+
+        self::assertFileExists($result['output']);
+        self::assertFileDoesNotExist($marker);
+    }
+
     private function findFont(): string
     {
         $candidates = [

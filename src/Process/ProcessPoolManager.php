@@ -48,11 +48,11 @@ final class ProcessPoolManager
     /**
      * 提交单个进程任务
      *
-     * @param string $command 要执行的命令
+     * @param string|list<string> $command 要执行的命令（推荐数组形式，免 shell）
      * @param array $options 配置选项
      * @return SystemProcess 进程实例
      */
-    public function submit(string $command, array $options = []): SystemProcess
+    public function submit(string|array $command, array $options = []): SystemProcess
     {
         $process = new SystemProcess($command, $options);
         $this->processes[] = $process;

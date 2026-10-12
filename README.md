@@ -440,6 +440,26 @@ $breaker->state(); // closed | open | half_open
 $breaker->status(); // ['state' => 'closed', 'failure_count' => 0, ...]
 ```
 
+### 4. 外部命令（ffmpeg / 系统进程）注入防护
+
+所有 `exec()` 拼接遵循两条硬约定，并有专用工具类 `Kode\AiAgent\Support\FFmpegEscaper`：
+
+- **shell 层**：路径类参数一律 `escapeshellarg()`，且**禁止把 `escapeshellarg()`
+  的产物塞回双引号包裹的命令片段**（双引号会让参数内的 `"` 提前闭合，形成命令注入）；
+  `-vf` / `-filter_complex` 一律以 `escapeshellarg(整串滤镜)` 作为单一 argv 进入 shell。
+- **滤镜图层**：filtergraph 以 `,` `;` `:` 为分隔符，参数值用
+  `FFmpegEscaper::quote()`（ffmpeg 单引号语法）引用，或用 `FFmpegEscaper::color()`
+  白名单过滤；`ClipOperationConfig` 各操作参数在构建时即类型化/白名单化
+  （数值强制转型、表达式字符集 `^[a-zA-Z0-9_+\-*/(). ]+$`、颜色白名单），
+  `VideoClipper::split()` 的容器格式走 `^[a-z0-9]{1,6}$` 白名单并同步到 glob。
+- **系统进程**：`SystemProcess` / `ProcessPoolManager::submit()` 支持数组命令
+  （`['ffmpeg', '-i', $path]`），不经 shell 解析、天然免疫注入；字符串形式经 shell
+  执行，调用方必须自行保证参数安全。
+
+回归用例：`tests/VideoClipperTest.php`（注入载荷 × 构建器白名单 × 真实 ffmpeg 执行）、
+`tests/VideoComposerV3Test.php::testSubtitleWithShellMetaCharactersIsSafe`
+（字幕特殊字符同时走逐场景与整体两条路径）。
+
 ## 支持的平台
 
 | 平台 | 别名 | 适配器 | 认证方式 | 默认模型 |
