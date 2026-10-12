@@ -325,13 +325,7 @@ class SupervisorAgent
             '审核' => 'reviewer',
         ];
 
-        foreach ($keywordMap as $keyword => $role) {
-            if (str_contains($taskLower, $keyword) && $this->has($role)) {
-                return $role;
-            }
-        }
-
-        return $this->roles()[0] ?? 'default';
+        return array_find($keywordMap, fn($role, $keyword) => str_contains($taskLower, $keyword) && $this->has($role)) ?? $this->roles()[0] ?? 'default';
     }
 
     private function buildPlanningPrompt(string $goal, array $workflow): string

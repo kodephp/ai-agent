@@ -219,12 +219,6 @@ final class MemoryVectorStore implements VectorStoreInterface
 
     private function matchFilters(array $metadata, array $filters): bool
     {
-        foreach ($filters as $key => $value) {
-            if (!isset($metadata[$key]) || $metadata[$key] !== $value) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($filters, fn($value, $key) => !(!isset($metadata[$key]) || $metadata[$key] !== $value));
     }
 }

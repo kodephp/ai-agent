@@ -53,12 +53,7 @@ final readonly class SynonymReplacementSkill implements CompressionSkillInterfac
     public function applicable(array $context = []): bool
     {
         $text = $context['text'] ?? '';
-        foreach (array_keys(self::SYNONYMS) as $key) {
-            if (str_contains($text, $key)) {
-                return true;
-            }
-        }
-        return false;
+        return array_any(array_keys(self::SYNONYMS), fn($key) => str_contains($text, $key));
     }
 
     public function compress(string $text, array $context = []): string

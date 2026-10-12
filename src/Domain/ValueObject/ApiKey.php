@@ -338,13 +338,7 @@ final readonly class ApiKey
                 && strlen($this->appSecret ?? '') >= 16;
         }
         
-        foreach ($this->keys as $key) {
-            if (strlen($key) < 16) {
-                return false;
-            }
-        }
-        
-        return true;
+        return array_all($this->keys, fn($key) => !(strlen($key) < 16));
     }
 
     /**

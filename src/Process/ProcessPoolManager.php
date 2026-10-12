@@ -111,13 +111,7 @@ final class ProcessPoolManager
      */
     public function isRunning(): bool
     {
-        foreach ($this->processes as $process) {
-            if ($process->isRunning()) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->processes, fn($process) => $process->isRunning());
     }
 
     /**

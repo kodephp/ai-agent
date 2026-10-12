@@ -586,13 +586,7 @@ final class VideoComposerV3
             return false;
         }
 
-        foreach ($outputLines as $line) {
-            if (trim($line) !== '') {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($outputLines, fn($line) => trim($line) !== '');
     }
 
     /**

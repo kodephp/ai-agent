@@ -348,12 +348,7 @@ final class DramaDirector
         if (is_int($id)) {
             return $this->segments[$id] ?? null;
         }
-        foreach ($this->segments as $segment) {
-            if ($segment->id === $id) {
-                return $segment;
-            }
-        }
-        return null;
+        return array_find($this->segments, fn($segment) => $segment->id === $id);
     }
 
     /**
@@ -495,12 +490,7 @@ final class DramaDirector
         if (is_int($id)) {
             return isset($this->segments[$id]) ? $id : null;
         }
-        foreach ($this->segments as $index => $segment) {
-            if ($segment->id === $id) {
-                return $index;
-            }
-        }
-        return null;
+        return array_find_key($this->segments, fn($segment, $index) => $segment->id === $id);
     }
 
     private function renumber(): void

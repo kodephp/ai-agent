@@ -158,12 +158,7 @@ final class RetryStrategy
 
         if ($error !== null && !empty($this->retryableErrors)) {
             $errorClass = get_class($error);
-            foreach ($this->retryableErrors as $retryableError) {
-                if ($errorClass === $retryableError || is_a($error, $retryableError, true)) {
-                    return true;
-                }
-            }
-            return false;
+            return array_any($this->retryableErrors, fn($retryableError) => $errorClass === $retryableError || is_a($error, $retryableError, true));
         }
 
         return true;
