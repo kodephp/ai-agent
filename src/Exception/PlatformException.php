@@ -23,6 +23,7 @@ class PlatformException extends \RuntimeException implements AiAgentException
         1005 => '服务端错误',
         1006 => '请求超时',
         1007 => '网络错误',
+        1008 => '接口拒绝请求',
     ];
 
     public function __construct(

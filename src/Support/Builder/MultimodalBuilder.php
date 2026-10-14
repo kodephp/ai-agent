@@ -7,6 +7,8 @@ namespace Kode\AiAgent\Support\Builder;
 use Kode\AiAgent\Application\Service\MultimodalService;
 use Kode\AiAgent\Domain\Contract\FileUploaderInterface;
 use Kode\AiAgent\Domain\Contract\MultimodalInterface;
+use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
+use Kode\AiAgent\Infrastructure\Adapter\PlatformMultimodalAdapter;
 use Kode\AiAgent\Infrastructure\Persistence\LocalFileUploader;
 use Psr\Log\LoggerInterface;
 
@@ -43,6 +45,26 @@ final class MultimodalBuilder
     {
         $this->adapter = $adapter;
         return $this;
+    }
+
+    /**
+     * 按平台名一步接入（AdapterFactory 创建平台适配器并自动桥接为多模态适配器）
+     *
+     * @param string $platform 平台名（openai / seedance / qwen / ...，同 AdapterFactory 注册表）
+     * @param array $config 平台配置（api_key 等，透传 AdapterFactory::create）
+     *
+     * @example
+     * ```php
+     * $service = MultimodalBuilder::create()
+     *     ->withPlatform('openai', ['api_key' => 'sk-xxx'])
+     *     ->build();
+     * ```
+     */
+    public function withPlatform(string $platform, array $config = []): self
+    {
+        return $this->withAdapter(
+            PlatformMultimodalAdapter::fromAdapter(AdapterFactory::create($platform, $config))
+        );
     }
 
     public function withFileUploader(FileUploaderInterface $fileUploader): self

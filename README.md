@@ -462,16 +462,22 @@ $breaker->status(); // ['state' => 'closed', 'failure_count' => 0, ...]
 
 ## 支持的平台
 
-| 平台 | 别名 | 适配器 | 认证方式 | 默认模型 |
-|------|------|--------|---------|---------|
-| OpenAI | - | `OpenAiAdapter` | API Key | gpt-4o |
-| Anthropic | claude | `AnthropicAdapter` | API Key | claude-3-5-sonnet |
-| DeepSeek | - | `DeepSeekAdapter` | API Key | deepseek-chat |
-| 阿里云 | qwen, tongyi | `AliyunAdapter` | API Key / AppKey+AppSecret | qwen-turbo |
-| Google | gemini | `GeminiAdapter` | API Key | gemini-2.0-flash |
-| 百度 | wenxin, ernie | `BaiduAdapter` | API Key + Secret Key | completions_pro |
-| 腾讯 | hunyuan | `TencentAdapter` | SecretId + SecretKey | hunyuan-lite |
-| 讯飞 | spark, xinghuo | `XunfeiAdapter` | AppId + API Key + API Secret | generalv3.5 |
+| 平台 | 别名 | 适配器 | 认证方式 | 默认模型 | 图像 | 视频 |
+|------|------|--------|---------|---------|------|------|
+| OpenAI | - | `OpenAiAdapter` | API Key | gpt-4o | ✅ | – |
+| Anthropic | claude | `AnthropicAdapter` | API Key | claude-3-5-sonnet | – | – |
+| DeepSeek | - | `DeepSeekAdapter` | API Key | deepseek-chat | – | – |
+| 阿里云 | qwen, tongyi | `AliyunAdapter` | API Key / AppKey+AppSecret | qwen-turbo | – | – |
+| Google | gemini | `GeminiAdapter` | API Key | gemini-2.0-flash | – | – |
+| 百度 | wenxin, ernie | `BaiduAdapter` | API Key + Secret Key | completions_pro | – | – |
+| 腾讯 | hunyuan | `TencentAdapter` | SecretId + SecretKey | hunyuan-lite | – | – |
+| 讯飞 | spark, xinghuo | `XunfeiAdapter` | AppId + API Key + API Secret | generalv3.5 | – | – |
+| 字节 Seedance | seedance | `SeedanceAdapter` | API Key | doubao-seedance | – | ✅ |
+
+> 「图像 / 视频」列表示该适配器实现的 `ImageGeneratorInterface` / `VideoGeneratorInterface`，
+> 经 `withPlatform()` 桥接（`PlatformMultimodalAdapter`）后对 `Multimodal::` 门面开箱可用；
+> 其余平台仅具备对话（`AdapterInterface`）能力。OpenAI 图像含文生图 / 编辑 / 变体（后两者默认 `dall-e-2`）。
+> 各视频 / 数字人 Provider 的具体能力见下方「供应商能力矩阵」。
 
 ```php
 // 检查平台支持
@@ -821,12 +827,47 @@ Kode AI Agent 提供完整的多模态能力支持，包括文本生成图像、
 | 能力枚举 | `MultimodalCapability` | 定义平台支持的所有多模态能力 |
 | 适配器接口 | `MultimodalInterface` | 统一的多模态操作接口 |
 | 抽象适配器 | `AbstractMultimodalAdapter` | 适配器基类，提供通用实现 |
+| 平台桥接适配器 | `PlatformMultimodalAdapter` | 把平台适配器（图像/视频/数字人接口）桥接为 `MultimodalInterface`，能力自动推断 |
 | 服务类 | `MultimodalService` | 高级服务封装 |
 | 响应模型 | `ImageResponse`/`VideoResponse`/`AvatarResponse` | 统一响应格式 |
 | 文件上传器 | `FileUploaderInterface` | 媒体文件上传接口 |
 | 本地上传器 | `LocalFileUploader` | 本地文件系统上传实现 |
 
 ### 快速开始
+
+#### 0. 内置平台一步接入（推荐）
+
+内置平台适配器（openai / seedance / qwen / ...）通过 `PlatformMultimodalAdapter` 自动桥接，
+能力按其实现的接口推断（图像 / 视频 / 数字人），无需手写适配器：
+
+```php
+use Kode\AiAgent\Support\Builder\MultimodalBuilder;
+use Kode\AiAgent\Support\Facade\Multimodal;
+
+// Builder 方式
+$service = MultimodalBuilder::create()
+    ->withPlatform('openai', ['api_key' => 'sk-xxx'])
+    ->build();
+
+// 或桥接后设为默认服务，走 Multimodal:: 门面
+Multimodal::setDefaultService(
+    MultimodalBuilder::create()->withPlatform('openai', ['api_key' => 'sk-xxx'])->build()
+);
+
+// 能力发现：图像能力开箱可用，视频能力返回 false（未注入视频委托）
+Multimodal::supports(\Kode\AiAgent\Domain\ValueObject\MultimodalCapability::TEXT_TO_IMAGE); // true
+Multimodal::supports(\Kode\AiAgent\Domain\ValueObject\MultimodalCapability::TEXT_TO_VIDEO); // false
+
+// 也可以直接桥接任意 AdapterFactory 产物，或显式混搭多个委托
+use Kode\AiAgent\Infrastructure\Adapter\PlatformMultimodalAdapter;
+$bridge = new PlatformMultimodalAdapter(
+    imageGenerator: $openAiAdapter,
+    videoGenerator: $seedanceAdapter,
+    platformName: 'openai+seedance',
+);
+```
+
+如果要接入未内置的平台，再走下面的自定义适配器流程。
 
 #### 1. 创建自定义多模态适配器
 
@@ -1003,27 +1044,31 @@ if (Multimodal::supports(\Kode\AiAgent\Domain\ValueObject\MultimodalCapability::
 #### 图像编辑
 
 ```php
-// 编辑现有图像
+// 编辑现有图像（支持本地路径 / data URI / 纯 base64 / http(s) URL）
 $response = Multimodal::editImage(
-    imagePath: '/path/to/original.jpg',
+    imagePath: '/path/to/original.png',
     prompt: '把背景改成海滩',
     options: [
-        'mask' => '/path/to/mask.png',
+        'mask' => '/path/to/mask.png', // 可选蒙版，透明区域指示编辑范围
+        'size' => '1024x1024',
     ]
 );
 
 echo $response->image();
 ```
 
+> OpenAI 图像编辑默认模型为 `dall-e-2`（`dall-e-3` 不支持 edits/variations），可用
+> `options['model']` 覆盖为其他兼容端点的模型。4xx 错误会抛 `PlatformException`（errorCode 1008），不再静默返回空图。
+
 #### 图像变体生成
 
 ```php
-// 生成图像变体
+// 生成图像变体（OpenAI 用法：n 为张数）
 $response = Multimodal::generateImageVariation(
-    imagePath: '/path/to/original.jpg',
+    imagePath: '/path/to/original.png',
     options: [
-        'variations' => 3,
-        'strength' => 0.7,
+        'n' => 3,
+        'size' => '1024x1024',
     ]
 );
 
