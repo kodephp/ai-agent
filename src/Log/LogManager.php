@@ -6,7 +6,6 @@ namespace Kode\AiAgent\Log;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Kode\Context\Context;
 
 final class LogManager
 {

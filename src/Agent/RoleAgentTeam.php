@@ -8,7 +8,6 @@ use Kode\AiAgent\Domain\Contract\AgentTeamInterface;
 use Kode\AiAgent\Domain\Contract\ResponseInterface;
 use Kode\AiAgent\Exception\ConfigurationException;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 class RoleAgentTeam implements AgentTeamInterface
 {

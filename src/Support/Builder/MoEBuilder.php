@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\Support\Builder;
 
-use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
 use Kode\AiAgent\Moe\MoEGateway;
 
 /**

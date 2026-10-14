@@ -8,7 +8,6 @@ use Kode\AiAgent\Domain\Contract\VideoProviderInterface;
 use Kode\AiAgent\Domain\Model\VideoResponse;
 use Kode\AiAgent\Domain\ValueObject\MultimodalCapability;
 use Kode\AiAgent\Infrastructure\Adapter\SeedanceAdapter;
-use Kode\HttpClient\Factory;
 
 /**
  * Seedance 视频供应商

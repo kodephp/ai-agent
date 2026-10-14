@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kode\AiAgent\Support\Facade;
 
 use Kode\AiAgent\AudioGateway\AudioGateway;
-use Kode\AiAgent\AudioGateway\Provider\OpenAiTtsProvider;
 use Kode\AiAgent\Domain\Model\AudioResponse;
 use Kode\Context\Context as KodeContext;
 use Kode\Facade\Facade;

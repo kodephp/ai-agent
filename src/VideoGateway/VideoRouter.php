@@ -7,8 +7,6 @@ namespace Kode\AiAgent\VideoGateway;
 use Kode\AiAgent\Domain\Model\VideoResponse;
 use Kode\AiAgent\Domain\ValueObject\MultimodalCapability;
 use Kode\AiAgent\VideoGateway\Strategy\CapabilityAwareVideoStrategy;
-use Kode\AiAgent\VideoGateway\Strategy\CostAwareVideoStrategy;
-use Kode\AiAgent\VideoGateway\Strategy\RoundRobinVideoStrategy;
 use Kode\AiAgent\VideoGateway\Strategy\VideoRoutingStrategyInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;

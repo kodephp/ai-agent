@@ -6,7 +6,6 @@ namespace Kode\AiAgent\Agent;
 
 use Kode\AiAgent\Domain\Contract\{AdapterInterface, MultimodalInterface};
 use Kode\AiAgent\Infrastructure\Adapter\AdapterFactory;
-use Kode\AiAgent\Infrastructure\Adapter\OpenAiAdapter;
 
 /**
  * Agent 中心 - 单 Key 多 Agent 管理

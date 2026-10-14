@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kode\AiAgent\Agent;
 
 use Kode\AiAgent\Domain\Contract\AdapterInterface;
-use Kode\AiAgent\Domain\Model\Response;
 
 /**
  * 剧本生成器

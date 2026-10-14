@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kode\AiAgent\VideoGateway\Strategy;
 
-use Kode\AiAgent\Domain\ValueObject\MultimodalCapability;
 use Kode\AiAgent\VideoGateway\VideoExpert;
 
 /**
