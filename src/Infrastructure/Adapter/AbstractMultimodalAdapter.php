@@ -21,6 +21,14 @@ use Kode\AiAgent\Exception\InvalidInputException;
 abstract class AbstractMultimodalAdapter implements MultimodalInterface
 {
     /**
+     * 进度缓存条数上限（超出时丢最旧，保留最近 N 条）。
+     *
+     * 常驻 worker 里一个适配器实例可能跑几十万个异步任务，无上限的数组就是慢性内存泄漏；
+     * 口径与 kode/database 的 Db::QUERY_LOG_LIMIT 一致：保留最近 N 条，正是排查时想要的那段。
+     */
+    public const PROGRESS_CACHE_LIMIT = 256;
+
+    /**
      * @var MultimodalCapability[] 平台支持的能力列表
      */
     protected array $supportedCapabilities = [];
@@ -199,8 +207,7 @@ abstract class AbstractMultimodalAdapter implements MultimodalInterface
     public function generateAvatarVideoAsync(string $text, array $options = []): string
     {
         $taskId = $this->generateTaskId();
-        $progress = Progress::create($taskId, '任务已创建，正在排队');
-        $this->progressCache[$taskId] = $progress;
+        $this->rememberProgress(Progress::create($taskId, '任务已创建，正在排队'));
 
         $this->scheduleAsyncTask($taskId, $text, $options);
 
@@ -377,6 +384,22 @@ TEXT;
     protected function generateTaskId(): string
     {
         return 'multimodal_' . bin2hex(random_bytes(16));
+    }
+
+    /**
+     * 写入进度缓存，超出上限时丢最旧（口径同 Db::QUERY_LOG_LIMIT，防常驻进程内存慢性泄漏）
+     */
+    protected function rememberProgress(Progress $progress): void
+    {
+        $this->progressCache[$progress->taskId] = $progress;
+
+        if (count($this->progressCache) > self::PROGRESS_CACHE_LIMIT) {
+            $this->progressCache = array_slice(
+                $this->progressCache,
+                -self::PROGRESS_CACHE_LIMIT,
+                preserve_keys: true,
+            );
+        }
     }
 
     /**

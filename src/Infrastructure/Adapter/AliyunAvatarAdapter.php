@@ -114,11 +114,9 @@ final class AliyunAvatarAdapter extends AbstractMultimodalAdapter implements Ada
     #[\NoDiscard]
     public function generateAvatarVideoAsync(string $text, array $options = []): string
     {
-        // 真异步：提交拿任务 ID，不本地模拟；进度由 getProgress() 走远端任务接口
-        $taskId = $this->provider->submitAvatarTask($text, $options);
-        $this->progressCache[$taskId] = Progress::create($taskId, '任务已提交，等待平台受理');
-
-        return $taskId;
+        // 真异步：提交拿任务 ID，不本地模拟；进度由 getProgress() 走远端任务接口，
+        // 不写本地进度缓存（写了也永远不读，只会让常驻 worker 的缓存无界增长）
+        return $this->provider->submitAvatarTask($text, $options);
     }
 
     #[\Override]
