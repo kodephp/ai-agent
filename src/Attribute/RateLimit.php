@@ -30,7 +30,7 @@ readonly class RateLimit
      */
     public function __construct(
         public int $requests = 60,
-        public string $per = 'minute',
+        public private(set) string $per = 'minute',
         public ?string $key = null,
     ) {}
 }

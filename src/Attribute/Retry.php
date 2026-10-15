@@ -34,7 +34,7 @@ readonly class Retry
         public int $maxAttempts = 3,
         public int $delay = 1000,
         public int $multiplier = 2,
-        public int $maxDelay = 10000,
-        public array $retryOn = [429, 500, 502, 503, 504],
+        public private(set) int $maxDelay = 10000,
+        public private(set) array $retryOn = [429, 500, 502, 503, 504],
     ) {}
 }

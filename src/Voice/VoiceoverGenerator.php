@@ -37,10 +37,10 @@ final class VoiceSegment
         public string $text,
         public ?VoiceRole $role = null,
         public ?string $voiceId = null,
-        public VoiceStyle $style = VoiceStyle::NATURAL,
-        public float $speed = 1.0,
-        public float $pitch = 1.0,
-        public float $volume = 1.0,
+        public private(set) VoiceStyle $style = VoiceStyle::NATURAL,
+        public private(set) float $speed = 1.0,
+        public private(set) float $pitch = 1.0,
+        public private(set) float $volume = 1.0,
     ) {}
 
     /**

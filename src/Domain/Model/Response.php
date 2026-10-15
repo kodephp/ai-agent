@@ -34,14 +34,14 @@ final readonly class Response implements ResponseInterface
 {
     public function __construct(
         public string $content = '',
-        public array $choices = [],
+        public private(set) array $choices = [],
         public array $usage = [],
         public float $duration = 0.0,
         public int $code = 0,
         public string $msg = 'success',
         public string $requestId = '',
         public string $model = '',
-        public bool $isStream = false,
+        public private(set) bool $isStream = false,
     ) {}
 
     /**

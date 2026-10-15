@@ -39,8 +39,8 @@ final class DramaSegment
         public string $id,
         public int $order,
         public string $title,
-        public string $prompt,
-        public TransitionType $transition = TransitionType::FADE,
+        public private(set) string $prompt,
+        public private(set) TransitionType $transition = TransitionType::FADE,
         public ?string $backgroundImage = null,
         public ?string $backgroundVideo = null,
         public ?ModelBinding $model = null,
@@ -48,10 +48,10 @@ final class DramaSegment
         public ?string $style = null,
         public ?string $generatedVideo = null,
         public string $status = 'pending',
-        public string $audioText = '',
+        public private(set) string $audioText = '',
         public ?ModelBinding $tts = null,
         public ?string $audioUrl = null,
-        public string $audioStatus = 'pending',
+        public private(set) string $audioStatus = 'pending',
         public ?string $subtitle = null,
     ) {}
 

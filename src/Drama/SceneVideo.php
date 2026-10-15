@@ -14,9 +14,9 @@ namespace Kode\AiAgent\Drama;
 readonly class SceneVideo
 {
     public function __construct(
-        public string $sceneId,
+        public private(set) string $sceneId,
         public int $order,
-        public string $videoUrl,
+        public private(set) string $videoUrl,
         public float $duration,
         public ?string $imageUrl = null,
         public ?string $audioUrl = null,

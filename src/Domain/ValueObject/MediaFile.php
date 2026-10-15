@@ -60,7 +60,7 @@ readonly class MediaFile
         public string $name,
         public string $path,
         public int $size,
-        public string $mimeType,
+        public private(set) string $mimeType,
         public string $type,
     ) {
         $this->validate();

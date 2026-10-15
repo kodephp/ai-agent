@@ -30,10 +30,10 @@ namespace Kode\AiAgent\Domain\Model;
 final readonly class VideoResponse
 {
     public function __construct(
-        public array $videos = [],
-        public float $videoDuration = 0.0,
-        public int $width = 0,
-        public int $height = 0,
+        public private(set) array $videos = [],
+        public private(set) float $videoDuration = 0.0,
+        public private(set) int $width = 0,
+        public private(set) int $height = 0,
         public float $duration = 0.0,
         public int $code = 0,
         public string $msg = 'success',

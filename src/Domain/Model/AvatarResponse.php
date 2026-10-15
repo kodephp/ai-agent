@@ -32,10 +32,10 @@ final readonly class AvatarResponse
 {
     public function __construct(
         public string $video = '',
-        public string $avatarId = '',
-        public string $voiceId = '',
+        public private(set) string $avatarId = '',
+        public private(set) string $voiceId = '',
         public string $text = '',
-        public float $videoDuration = 0.0,
+        public private(set) float $videoDuration = 0.0,
         public float $duration = 0.0,
         public int $code = 0,
         public string $msg = 'success',

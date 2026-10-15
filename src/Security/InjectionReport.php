@@ -16,10 +16,10 @@ final readonly class InjectionReport
      */
     public function __construct(
         public string $input,
-        public bool $malicious,
-        public array $matches,
-        public int $maxSeverity,
-        public int $totalSeverity,
+        public private(set) bool $malicious,
+        public private(set) array $matches,
+        public private(set) int $maxSeverity,
+        public private(set) int $totalSeverity,
     ) {}
 
     /**

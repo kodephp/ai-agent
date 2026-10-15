@@ -21,9 +21,9 @@ final class SubtitleConfig
     public function __construct(
         public string $text,
         public string $position = 'bottom',
-        public string $font = 'Arial',
-        public int $fontSize = 24,
-        public string $color = 'white',
+        public private(set) string $font = 'Arial',
+        public private(set) int $fontSize = 24,
+        public private(set) string $color = 'white',
         public string $backgroundColor = 'black@0.5',
     ) {}
 

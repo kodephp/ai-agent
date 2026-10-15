@@ -20,11 +20,11 @@ final readonly class ModelConfig
 {
     public function __construct(
         public string $model = 'gpt-4o',
-        public float $temperature = 0.7,
-        public int $maxTokens = 4096,
-        public float $topP = 1.0,
-        public float $frequencyPenalty = 0.0,
-        public float $presencePenalty = 0.0,
+        public private(set) float $temperature = 0.7,
+        public private(set) int $maxTokens = 4096,
+        public private(set) float $topP = 1.0,
+        public private(set) float $frequencyPenalty = 0.0,
+        public private(set) float $presencePenalty = 0.0,
         public ?string $stop = null,
     ) {}
 

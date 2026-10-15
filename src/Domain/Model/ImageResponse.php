@@ -30,8 +30,8 @@ namespace Kode\AiAgent\Domain\Model;
 final readonly class ImageResponse
 {
     public function __construct(
-        public array $images = [],
-        public string $revisedPrompt = '',
+        public private(set) array $images = [],
+        public private(set) string $revisedPrompt = '',
         public float $duration = 0.0,
         public int $code = 0,
         public string $msg = 'success',

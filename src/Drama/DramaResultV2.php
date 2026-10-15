@@ -16,8 +16,8 @@ readonly class DramaResultV2
     public function __construct(
         public string $id,
         public string $video,
-        public StoryBoardV2 $storyBoard,
-        public array $scenes,
+        public private(set) StoryBoardV2 $storyBoard,
+        public private(set) array $scenes,
         public array $sceneVideos,
         public float $duration,
         public array $metadata = [],

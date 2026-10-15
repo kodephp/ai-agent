@@ -12,7 +12,7 @@ final class TransitionEffect
     public function __construct(
         public TransitionType $type,
         public float $duration = 1,
-        public string $easing = 'ease-in-out',
+        public private(set) string $easing = 'ease-in-out',
         public array $options = [],
     ) {}
 

@@ -14,7 +14,7 @@ namespace Kode\AiAgent\Domain\Model;
 final readonly class AudioResponse
 {
     public function __construct(
-        public array $audios = [],
+        public private(set) array $audios = [],
         public float $duration = 0.0,
         public string $voice = '',
         public string $model = '',

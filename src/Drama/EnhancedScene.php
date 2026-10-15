@@ -42,7 +42,7 @@ final class EnhancedScene
         public int $order,
         public string $description,
         public SceneType $type = SceneType::MAIN,
-        public string $style = 'cinematic',
+        public private(set) string $style = 'cinematic',
         public int $duration = 10,
         public array $metadata = [],
         public ?string $imageUrl = null,

@@ -24,9 +24,9 @@ final readonly class Progress
     public float $updatedAt;
 
     public function __construct(
-        public string $taskId,
+        public private(set) string $taskId,
         public string $status,
-        public int $progress = 0,
+        public private(set) int $progress = 0,
         public string $message = '',
         public ?array $data = null,
         float $createdAt = 0.0,

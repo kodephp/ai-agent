@@ -12,7 +12,7 @@ use Kode\AiAgent\Support\FFmpegEscaper;
 final class ClipOperationConfig
 {
     public function __construct(
-        public ClipOperation $operation,
+        public private(set) ClipOperation $operation,
         public array $params = [],
         public ?float $startTime = null,
         public ?float $endTime = null,

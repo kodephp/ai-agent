@@ -30,9 +30,9 @@ final readonly class RoutingContext
         public ?string $preferredModel = null,
         public ?float $maxCost = null,
         public ?int $maxTokens = null,
-        public float $temperature = 0.7,
+        public private(set) float $temperature = 0.7,
         public bool $stream = false,
-        public string $promptText = '',
+        public private(set) string $promptText = '',
         public array $extra = [],
     ) {}
 
