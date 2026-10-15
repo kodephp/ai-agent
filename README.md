@@ -462,21 +462,24 @@ $breaker->status(); // ['state' => 'closed', 'failure_count' => 0, ...]
 
 ## 支持的平台
 
-| 平台 | 别名 | 适配器 | 认证方式 | 默认模型 | 图像 | 视频 |
-|------|------|--------|---------|---------|------|------|
-| OpenAI | - | `OpenAiAdapter` | API Key | gpt-4o | ✅ | – |
-| Anthropic | claude | `AnthropicAdapter` | API Key | claude-3-5-sonnet | – | – |
-| DeepSeek | - | `DeepSeekAdapter` | API Key | deepseek-chat | – | – |
-| 阿里云 | qwen, tongyi | `AliyunAdapter` | API Key / AppKey+AppSecret | qwen-turbo | – | – |
-| Google | gemini | `GeminiAdapter` | API Key | gemini-2.0-flash | – | – |
-| 百度 | wenxin, ernie | `BaiduAdapter` | API Key + Secret Key | completions_pro | – | – |
-| 腾讯 | hunyuan | `TencentAdapter` | SecretId + SecretKey | hunyuan-lite | – | – |
-| 讯飞 | spark, xinghuo | `XunfeiAdapter` | AppId + API Key + API Secret | generalv3.5 | – | – |
-| 字节 Seedance | seedance | `SeedanceAdapter` | API Key | doubao-seedance | – | ✅ |
+| 平台 | 别名 | 适配器 | 认证方式 | 默认模型 | 图像 | 视频 | 数字人 |
+|------|------|--------|---------|---------|------|------|--------|
+| OpenAI | - | `OpenAiAdapter` | API Key | gpt-4o | ✅ | – | – |
+| Anthropic | claude | `AnthropicAdapter` | API Key | claude-3-5-sonnet | – | – | – |
+| DeepSeek | - | `DeepSeekAdapter` | API Key | deepseek-chat | – | – | – |
+| 阿里云 | qwen, tongyi | `AliyunAdapter` | API Key / AppKey+AppSecret | qwen-turbo | – | – | – |
+| Google | gemini | `GeminiAdapter` | API Key | gemini-2.0-flash | – | – | – |
+| 百度 | wenxin, ernie | `BaiduAdapter` | API Key + Secret Key | completions_pro | – | – | – |
+| 腾讯 | hunyuan | `TencentAdapter` | SecretId + SecretKey | hunyuan-lite | – | – | – |
+| 讯飞 | spark, xinghuo | `XunfeiAdapter` | AppId + API Key + API Secret | generalv3.5 | – | – | – |
+| 字节 Seedance | seedance | `SeedanceAdapter` | API Key | doubao-seedance | – | ✅ | – |
+| 阿里数字人 | aliyun-avatar | `AliyunAvatarAdapter` | API Key | aliyun-avatar | – | – | ✅ |
 
-> 「图像 / 视频」列表示该适配器实现的 `ImageGeneratorInterface` / `VideoGeneratorInterface`，
-> 经 `withPlatform()` 桥接（`PlatformMultimodalAdapter`）后对 `Multimodal::` 门面开箱可用；
+> 「图像 / 视频 / 数字人」列表示该适配器实现的 `ImageGeneratorInterface` / `VideoGeneratorInterface` /
+> `AvatarInterface`，经 `withPlatform()` 桥接（`PlatformMultimodalAdapter`）后对 `Multimodal::` 门面开箱可用；
 > 其余平台仅具备对话（`AdapterInterface`）能力。OpenAI 图像含文生图 / 编辑 / 变体（后两者默认 `dall-e-2`）。
+> 阿里数字人为「提交 + 远端轮询」模式：同步生成内部轮询到完成，异步生成返回任务 ID、进度走远端任务接口；
+> 自定义视频 / 音频数字人未提供（调用抛 1004 清晰异常）。
 > 各视频 / 数字人 Provider 的具体能力见下方「供应商能力矩阵」。
 
 ```php
@@ -849,6 +852,12 @@ $service = MultimodalBuilder::create()
     ->withPlatform('openai', ['api_key' => 'sk-xxx'])
     ->build();
 
+// 数字人平台同理（别名 aliyun-avatar）
+$avatar = MultimodalBuilder::create()
+    ->withPlatform('aliyun-avatar', ['api_key' => 'sk-dashscope-xxx'])
+    ->build();
+$avatar->supports(\Kode\AiAgent\Domain\ValueObject\MultimodalCapability::AVATAR_GENERATION); // true
+
 // 或桥接后设为默认服务，走 Multimodal:: 门面
 Multimodal::setDefaultService(
     MultimodalBuilder::create()->withPlatform('openai', ['api_key' => 'sk-xxx'])->build()
@@ -1219,6 +1228,8 @@ $report = $gateway->report();
 | 阿里数字人 | `AliyunAvatarProvider` | – | – | ✅ | – |
 
 > 数字人端点可通过 `options['base_url']` 适配具体开通的阿里云数字人服务。
+> 阿里数字人同时提供多模态适配器 `AliyunAvatarAdapter`（工厂别名 `aliyun-avatar`），
+> 可经 `MultimodalBuilder::withPlatform('aliyun-avatar', ['api_key' => '...'])` 接入统一多模态链路。
 
 #### 获取平台能力
 

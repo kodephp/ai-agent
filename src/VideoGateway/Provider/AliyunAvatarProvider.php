@@ -39,21 +39,25 @@ final class AliyunAvatarProvider implements VideoProviderInterface
     private const DEFAULT_MODEL = 'aliyun-avatar';
     private const DEFAULT_COST = 0.20;
 
-    private \Kode\HttpClient\HttpClient $client;
+    private \Kode\HttpClient\HttpClientInterface $client;
     private array $config;
     private string $apiKey;
 
     /**
      * @param array<string, mixed> $options base_url/avatar_id/voice_id/timeout 等
+     * @param \Kode\HttpClient\HttpClientInterface|null $client 注入客户端（测试 / 与适配器工厂共享）；缺省自建
      */
-    public function __construct(#[\SensitiveParameter] string $apiKey, array $options = [])
-    {
+    public function __construct(
+        #[\SensitiveParameter] string $apiKey,
+        array $options = [],
+        ?\Kode\HttpClient\HttpClientInterface $client = null
+    ) {
         if ($apiKey === '') {
             throw new \Kode\AiAgent\Exception\ConfigurationException('api_key 不能为空');
         }
         $this->apiKey = $apiKey;
         $this->config = $options;
-        $this->client = Factory::create([
+        $this->client = $client ?? Factory::create([
             'timeout' => $options['timeout'] ?? 120,
             'retries' => $options['retries'] ?? 3,
         ]);
@@ -101,6 +105,17 @@ final class AliyunAvatarProvider implements VideoProviderInterface
     #[\NoDiscard]
     public function generateAvatar(string $text, array $options = []): VideoResponse
     {
+        $taskId = $this->submitAvatarTask($text, $options);
+
+        return $this->waitForCompletion($taskId, $options);
+    }
+
+    /**
+     * 提交数字人任务，返回任务 ID（不轮询；异步 API 或需要自控轮询节奏时使用）。
+     */
+    #[\NoDiscard]
+    public function submitAvatarTask(string $text, array $options = []): string
+    {
         if (trim($text) === '') {
             throw new \Kode\AiAgent\Exception\InvalidInputException('text 不能为空');
         }
@@ -113,8 +128,7 @@ final class AliyunAvatarProvider implements VideoProviderInterface
             'language' => $options['language'] ?? $this->config['language'] ?? 'zh-CN',
         ];
 
-        $taskId = $this->submitTask('avatar/generate', $body);
-        return $this->waitForCompletion($taskId, $options);
+        return $this->submitTask('avatar/generate', $body);
     }
 
     #[\Override]

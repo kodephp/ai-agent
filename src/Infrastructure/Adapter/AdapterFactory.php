@@ -50,6 +50,8 @@ final class AdapterFactory
         'seedance' => SeedanceAdapter::class,
         'seedance2' => SeedanceAdapter::class,
         'bytedance' => SeedanceAdapter::class,
+        'aliyun-avatar' => AliyunAvatarAdapter::class,
+        'aliyun_avatar' => AliyunAvatarAdapter::class,
     ];
 
     /**

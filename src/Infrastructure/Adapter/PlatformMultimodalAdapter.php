@@ -80,6 +80,38 @@ final class PlatformMultimodalAdapter extends AbstractMultimodalAdapter
      */
     public static function fromAdapter(object $adapter, string $platformName = ''): self
     {
+        if ($platformName === '') {
+            $platformName = $adapter instanceof AdapterInterface ? $adapter->name() : 'platform';
+        }
+
+        // 多模态家族（AbstractMultimodalAdapter 子类）：MultimodalInterface 本身就 extends
+        // 三个子接口，instanceof 探测在这一族上恒真 —— 直接嗅探会把「仅数字人」的适配器
+        // 虚报成图文视频全能力。这一族改为读自报能力挑委托：
+        //  - 已声明能力（initializeCapabilities 非空）→ 按 supports() 精确注入，能力表原样带入；
+        //  - 未声明能力（沿用基类空表的完整多模态自定义适配器）→ 三个委托都给，沿用「完整实现」语义。
+        if ($adapter instanceof AbstractMultimodalAdapter) {
+            $caps = $adapter->capabilities();
+            if ($caps !== []) {
+                $by = static fn (MultimodalCapability $capability): ?object
+                    => $adapter->supports($capability) ? $adapter : null;
+
+                return new self(
+                    imageGenerator: $by(MultimodalCapability::TEXT_TO_IMAGE),
+                    videoGenerator: $by(MultimodalCapability::TEXT_TO_VIDEO),
+                    avatarProvider: $by(MultimodalCapability::AVATAR_GENERATION),
+                    platformName: $platformName,
+                    explicitCapabilities: $caps,
+                );
+            }
+
+            return new self(
+                imageGenerator: $adapter,
+                videoGenerator: $adapter,
+                avatarProvider: $adapter,
+                platformName: $platformName,
+            );
+        }
+
         if (!$adapter instanceof ImageGeneratorInterface
             && !$adapter instanceof VideoGeneratorInterface
             && !$adapter instanceof AvatarInterface
@@ -89,10 +121,6 @@ final class PlatformMultimodalAdapter extends AbstractMultimodalAdapter
                 101,
                 ['adapter' => $adapter::class]
             );
-        }
-
-        if ($platformName === '') {
-            $platformName = $adapter instanceof AdapterInterface ? $adapter->name() : 'platform';
         }
 
         return new self(
@@ -111,7 +139,8 @@ final class PlatformMultimodalAdapter extends AbstractMultimodalAdapter
     protected function initializeCapabilities(): void
     {
         if ($this->explicitCapabilities !== null) {
-            $this->supportedCapabilities = array_values(array_unique($this->explicitCapabilities));
+            // SORT_REGULAR：能力枚举对象不能走默认的字符串比较（会触发枚举转 string 的 Error）
+            $this->supportedCapabilities = array_values(array_unique($this->explicitCapabilities, SORT_REGULAR));
             return;
         }
 
