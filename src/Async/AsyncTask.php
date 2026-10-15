@@ -28,6 +28,7 @@ use Fiber;
  */
 final class AsyncTask
 {
+    /** @var Fiber<mixed, mixed, mixed, mixed> */
     private Fiber $fiber;
     private ?\Throwable $error = null;
     private mixed $result = null;

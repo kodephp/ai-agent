@@ -19,7 +19,7 @@ final class MCPClient implements MCPClientInterface
     public function __construct(
         private ?HttpClient $client = null,
         private array $config = [],
-        private $transport = null,
+        private mixed $transport = null,
     ) {
         $this->config = array_merge([
             'protocol_version' => '2024-11-05',

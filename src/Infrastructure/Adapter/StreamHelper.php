@@ -17,6 +17,8 @@ trait StreamHelper
 {
     /**
      * 从流中读取一行
+     *
+     * @param \Psr\Http\Message\StreamInterface $stream
      */
     protected function readLine($stream): string
     {

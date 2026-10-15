@@ -135,7 +135,6 @@ final class PlatformMultimodalAdapter extends AbstractMultimodalAdapter
      * @inheritDoc
      */
     #[\Override]
-    #[\NoDiscard]
     protected function initializeCapabilities(): void
     {
         if ($this->explicitCapabilities !== null) {

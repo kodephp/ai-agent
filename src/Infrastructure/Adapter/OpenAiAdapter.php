@@ -227,7 +227,7 @@ final class OpenAiAdapter implements AdapterInterface, ImageGeneratorInterface
         ];
 
         // 可选蒙版（透明区域指示编辑范围），与 image 同为文件上载字段
-        if (isset($options['mask']) && is_string($options['mask']) && $options['mask'] !== '') {
+        if (isset($options['mask']) && is_string($options['mask']) && $options['mask'] !== '') { // @phpstan-ignore booleanAnd.rightAlwaysTrue (用户输入数组无形状保证，保留空串护栏)
             [$maskContent, $maskFilename, $maskMime] = $this->resolveImageBytes($options['mask'], []);
             $files[] = ['name' => 'mask', 'filename' => $maskFilename, 'mime' => $maskMime, 'content' => $maskContent];
         }
